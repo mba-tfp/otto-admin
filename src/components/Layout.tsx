@@ -59,7 +59,7 @@ export function Sidebar() {
             >
               <Icon size={15} strokeWidth={1.75} />
               <span className="flex-1">{item.label}</span>
-              {item.badge && (
+              {"hasBadge" in item && item.hasBadge && unread > 0 && (
                 <span
                   className="text-white font-medium"
                   style={{
@@ -70,7 +70,7 @@ export function Sidebar() {
                     lineHeight: "14px",
                   }}
                 >
-                  {item.badge}
+                  {unread}
                 </span>
               )}
             </Link>
