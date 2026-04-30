@@ -39,7 +39,7 @@ function FeedbackPage() {
   });
 
   const update = (patch: Record<string, string | undefined>) => {
-    navigate({ to: "/feedback", search: (prev: typeof search) => ({ ...prev, ...patch }) });
+    navigate({ to: "/feedback", search: (prev: any) => ({ ...prev, ...patch }) });
   };
 
   const selectedId = search.selected ?? filtered[0]?.id;
