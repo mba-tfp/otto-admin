@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as FeedbackRouteImport } from './routes/feedback'
+import { Route as EditorRouteImport } from './routes/editor'
 import { Route as ContentRouteImport } from './routes/content'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
@@ -23,6 +24,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const FeedbackRoute = FeedbackRouteImport.update({
   id: '/feedback',
   path: '/feedback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EditorRoute = EditorRouteImport.update({
+  id: '/editor',
+  path: '/editor',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContentRoute = ContentRouteImport.update({
@@ -45,6 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/content': typeof ContentRoute
+  '/editor': typeof EditorRoute
   '/feedback': typeof FeedbackRoute
   '/settings': typeof SettingsRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/content': typeof ContentRoute
+  '/editor': typeof EditorRoute
   '/feedback': typeof FeedbackRoute
   '/settings': typeof SettingsRoute
 }
@@ -60,21 +68,36 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/content': typeof ContentRoute
+  '/editor': typeof EditorRoute
   '/feedback': typeof FeedbackRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/analytics' | '/content' | '/feedback' | '/settings'
+  fullPaths:
+    | '/'
+    | '/analytics'
+    | '/content'
+    | '/editor'
+    | '/feedback'
+    | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/analytics' | '/content' | '/feedback' | '/settings'
-  id: '__root__' | '/' | '/analytics' | '/content' | '/feedback' | '/settings'
+  to: '/' | '/analytics' | '/content' | '/editor' | '/feedback' | '/settings'
+  id:
+    | '__root__'
+    | '/'
+    | '/analytics'
+    | '/content'
+    | '/editor'
+    | '/feedback'
+    | '/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalyticsRoute: typeof AnalyticsRoute
   ContentRoute: typeof ContentRoute
+  EditorRoute: typeof EditorRoute
   FeedbackRoute: typeof FeedbackRoute
   SettingsRoute: typeof SettingsRoute
 }
@@ -93,6 +116,13 @@ declare module '@tanstack/react-router' {
       path: '/feedback'
       fullPath: '/feedback'
       preLoaderRoute: typeof FeedbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/editor': {
+      id: '/editor'
+      path: '/editor'
+      fullPath: '/editor'
+      preLoaderRoute: typeof EditorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/content': {
@@ -123,6 +153,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalyticsRoute: AnalyticsRoute,
   ContentRoute: ContentRoute,
+  EditorRoute: EditorRoute,
   FeedbackRoute: FeedbackRoute,
   SettingsRoute: SettingsRoute,
 }
