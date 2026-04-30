@@ -42,7 +42,15 @@ function Divider() {
   return <div style={{ width: 1, height: 18, background: "#E2E6EF", margin: "0 4px" }} />;
 }
 
-export function TiptapEditor() {
+export function TiptapEditor({
+  content,
+  onChange,
+  placeholder,
+}: {
+  content: string;
+  onChange?: (html: string) => void;
+  placeholder?: string;
+}) {
   const fileRef = useRef<HTMLInputElement>(null);
   const editor = useEditor({
     extensions: [
@@ -51,9 +59,12 @@ export function TiptapEditor() {
       LinkExt.configure({ openOnClick: false, HTMLAttributes: { target: "_blank" } }),
       ImageExt.configure({ inline: false, allowBase64: true }),
     ],
-    content: initialContent,
+    content: content || `<p style="color:#8A96AA">${placeholder ?? "Start writing..."}</p>`,
     editorProps: {
       attributes: { class: "tiptap-content" },
+    },
+    onUpdate: ({ editor }) => {
+      onChange?.(editor.getHTML());
     },
     immediatelyRender: false,
   });
