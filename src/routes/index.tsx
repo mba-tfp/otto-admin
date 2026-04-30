@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { TopBar, PrimaryButton, PageContent, Card, StatusBadge } from "../components/Layout";
+import { useStore } from "../data/store";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [{ title: "Dashboard — Otto Help Center Admin" }] }),
@@ -18,12 +19,6 @@ function StatCard({ label, value, sub, subColor }: { label: string; value: strin
   );
 }
 
-const pending = [
-  { title: "Dictation & Recording", sub: "Article · Otto Notes, Onboarding", status: "In review" as const },
-  { title: "Account & Billing FAQ", sub: "FAQ · Otto Notes, Fertiwise", status: "In review" as const },
-  { title: "AI Writing Assistant v2", sub: "What's new · Otto Notes", status: "Approved" as const },
-];
-
 const activity = [
   { initials: "SS", bg: "#1B2B4B", color: "#fff", text: "Published 'Create Your First Session'", time: "2 hours ago" },
   { initials: "AM", bg: "#EAF3DE", color: "#2D7D46", text: "Submitted 'Managing Letters' for review", time: "Yesterday" },
@@ -40,18 +35,28 @@ const topArticles = [
 
 function Dashboard() {
   const navigate = useNavigate();
+  const articles = useStore((s) => s.articles);
+  const unread = useStore((s) => s.feedback.filter((f) => f.unread).length);
+
+  const total = articles.length;
+  const published = articles.filter((a) => a.status === "Live").length;
+  const inReview = articles.filter((a) => a.status === "In review");
+  const approved = articles.filter((a) => a.status === "Approved");
+  const pendingCount = inReview.length + approved.length;
+  const queue = [...inReview, ...approved].slice(0, 3);
+
   return (
     <>
       <TopBar
         title="Dashboard"
-        action={<PrimaryButton onClick={() => navigate({ to: "/editor" })}>+ New content</PrimaryButton>}
+        action={<PrimaryButton onClick={() => navigate({ to: "/editor/new" })}>+ New content</PrimaryButton>}
       />
       <PageContent>
         <div className="grid grid-cols-4 gap-4 mb-4">
-          <StatCard label="Total articles" value="24" sub="+3 this month" subColor="#2D7D46" />
-          <StatCard label="Published" value="18" sub="across all apps" subColor="#8A96AA" />
-          <StatCard label="Pending approval" value="3" sub="needs review" subColor="#92580A" />
-          <StatCard label="New feedback" value="5" sub="unread" subColor="#92580A" />
+          <StatCard label="Total articles" value={String(total)} sub="+3 this month" subColor="#2D7D46" />
+          <StatCard label="Published" value={String(published)} sub="across all apps" subColor="#8A96AA" />
+          <StatCard label="Pending approval" value={String(pendingCount)} sub={inReview.length > 0 ? "needs review" : "ready to publish"} subColor="#92580A" />
+          <StatCard label="New feedback" value={String(unread)} sub="unread" subColor="#92580A" />
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-4">
@@ -61,18 +66,25 @@ function Dashboard() {
               <Link to="/content" style={{ fontSize: 11, color: "#E5635A" }}>View all →</Link>
             </div>
             <div>
-              {pending.map((p, i) => (
-                <div
-                  key={p.title}
+              {queue.length === 0 && (
+                <div style={{ padding: "20px 0", fontSize: 12, color: "#8A96AA", textAlign: "center" }}>
+                  Nothing waiting for approval.
+                </div>
+              )}
+              {queue.map((p, i) => (
+                <Link
+                  key={p.id}
+                  to="/editor/$id"
+                  params={{ id: p.id }}
                   className="flex items-center justify-between py-3"
-                  style={{ borderTop: i === 0 ? "none" : "1px solid #F0F3F8" }}
+                  style={{ borderTop: i === 0 ? "none" : "1px solid #F0F3F8", textDecoration: "none" }}
                 >
                   <div className="min-w-0">
                     <div style={{ fontSize: 12, fontWeight: 500, color: "#1A1F2E" }}>{p.title}</div>
-                    <div style={{ fontSize: 11, color: "#8A96AA", marginTop: 2 }}>{p.sub}</div>
+                    <div style={{ fontSize: 11, color: "#8A96AA", marginTop: 2 }}>{p.type} · {p.apps.join(", ")}</div>
                   </div>
-                  <StatusBadge status={p.status} />
-                </div>
+                  <StatusBadge status={p.status as "In review" | "Approved"} />
+                </Link>
               ))}
             </div>
           </Card>

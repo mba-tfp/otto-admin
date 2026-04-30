@@ -1,34 +1,23 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
 import { TopBar, PageContent, Card, AppBadge, Badge, PrimaryButton } from "../components/Layout";
 import { Select } from "../components/Form";
+import { useStore, actions, type FeedbackType, type FeedbackStatus } from "../data/store";
+
+const searchSchema = z.object({
+  type: fallback(z.string(), "All types").default("All types"),
+  app: fallback(z.string(), "All apps").default("All apps"),
+  status: fallback(z.string(), "All statuses").default("All statuses"),
+  selected: fallback(z.string().optional(), undefined),
+});
 
 export const Route = createFileRoute("/feedback")({
   head: () => ({ meta: [{ title: "Feedback Inbox — Otto Help Center Admin" }] }),
+  validateSearch: zodValidator(searchSchema),
   component: FeedbackPage,
 });
-
-type FeedbackType = "Bug report" | "Support" | "Feedback" | "Rating";
-
-type Item = {
-  id: number;
-  unread: boolean;
-  type: FeedbackType;
-  app: string;
-  subject: string;
-  sender: string;
-  email: string;
-  time: string;
-  message: string;
-};
-
-const items: Item[] = [
-  { id: 1, unread: true, type: "Bug report", app: "Otto Notes", subject: "Transcript stops mid-session", sender: "Dr. Amara Patel", email: "amara@clinic.com", time: "1 hour ago", message: "When I record a session longer than about 8 minutes, the transcript stops updating but the recording timer keeps running. I have to stop and restart, losing the audio between." },
-  { id: 2, unread: true, type: "Support", app: "Onboarding", subject: "Can't find patient import option", sender: "Clinic Admin", email: "admin@example.com", time: "3 hours ago", message: "I'm trying to bulk-import our patient list from a CSV but the import button is not visible in the workflow setup screen. Where is it?" },
-  { id: 3, unread: true, type: "Bug report", app: "Otto Notes", subject: "Letter not generating from session", sender: "Dr. Ben Harlow", email: "ben@harlow.uk", time: "Yesterday", message: "After completing a session and clicking 'Generate letter', nothing happens. No error, no letter. Tried in Chrome and Safari." },
-  { id: 4, unread: false, type: "Feedback", app: "Otto Notes", subject: "Love the new template editor UI", sender: "Anonymous", email: "—", time: "2 days ago", message: "The redesign is gorgeous. Much faster to build a template now. One ask: please add keyboard shortcut for inserting a section." },
-  { id: 5, unread: false, type: "Rating", app: "Fertiwise", subject: "★★★★☆ — Good but slow to load", sender: "Anonymous", email: "—", time: "3 days ago", message: "App is great once it loads, but initial load on cellular is painfully slow. Could you add an offline mode for cycle tracking?" },
-];
 
 const typeColors: Record<FeedbackType, { color: string; bg: string }> = {
   "Bug report": { color: "#A32D2D", bg: "#FCEBEB" },
@@ -38,43 +27,74 @@ const typeColors: Record<FeedbackType, { color: string; bg: string }> = {
 };
 
 function FeedbackPage() {
-  const [selected, setSelected] = useState<number>(1);
-  const [note, setNote] = useState("");
-  const [status, setStatus] = useState("New");
-  const [type, setType] = useState("All types");
-  const [app, setApp] = useState("All apps");
-  const [statusFilter, setStatusFilter] = useState("All statuses");
+  const navigate = useNavigate();
+  const search = Route.useSearch();
+  const feedback = useStore((s) => s.feedback);
 
-  const current = items.find((i) => i.id === selected)!;
+  const filtered = feedback.filter((f) => {
+    if (search.type !== "All types" && f.type !== search.type) return false;
+    if (search.app !== "All apps" && f.app !== search.app) return false;
+    if (search.status !== "All statuses" && f.status !== search.status) return false;
+    return true;
+  });
+
+  const update = (patch: Record<string, string | undefined>) => {
+    navigate({ to: "/feedback", search: (prev) => ({ ...prev, ...patch }) });
+  };
+
+  const selectedId = search.selected ?? filtered[0]?.id;
+  const current = feedback.find((f) => f.id === selectedId) ?? filtered[0];
+
+  // Keep selection valid as filters change
+  useEffect(() => {
+    if (filtered.length === 0) return;
+    if (!filtered.find((f) => f.id === selectedId)) {
+      update({ selected: filtered[0].id });
+    }
+  }, [selectedId, filtered.length]);
+
+  // Mark current as read on selection
+  useEffect(() => {
+    if (current && current.unread) {
+      actions.markFeedbackRead(current.id);
+    }
+  }, [current?.id]);
+
+  const unreadCount = feedback.filter((f) => f.unread).length;
 
   return (
     <>
       <TopBar title="Feedback inbox" />
       <PageContent>
         <div className="flex items-center gap-2 mb-4">
-          <Select value={type} onChange={setType} options={["All types", "Bug report", "Support", "Feedback", "Rating"]} />
-          <Select value={app} onChange={setApp} options={["All apps", "Otto Notes", "Onboarding", "Fertiwise"]} />
-          <Select value={statusFilter} onChange={setStatusFilter} options={["All statuses", "New", "In progress", "Resolved"]} />
+          <Select value={search.type} onChange={(v) => update({ type: v })} options={["All types", "Bug report", "Support", "Feedback", "Rating"]} />
+          <Select value={search.app} onChange={(v) => update({ app: v })} options={["All apps", "Otto Notes", "Onboarding", "Fertiwise"]} />
+          <Select value={search.status} onChange={(v) => update({ status: v })} options={["All statuses", "New", "In progress", "Resolved"]} />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           {/* Left: list */}
           <Card padding={0}>
             <div style={{ padding: "12px 18px", borderBottom: "1px solid #EEF1F7", color: "#8A96AA", fontSize: 11, fontWeight: 500 }}>
-              5 unread submissions
+              {unreadCount} unread · {filtered.length} shown
             </div>
             <div>
-              {items.map((it, i) => {
+              {filtered.length === 0 && (
+                <div style={{ padding: "32px 18px", textAlign: "center", color: "#8A96AA", fontSize: 12 }}>
+                  No feedback matches these filters.
+                </div>
+              )}
+              {filtered.map((it, i) => {
                 const tc = typeColors[it.type];
-                const isSel = it.id === selected;
+                const isSel = it.id === current?.id;
                 return (
                   <div
                     key={it.id}
-                    onClick={() => setSelected(it.id)}
+                    onClick={() => update({ selected: it.id })}
                     className="flex items-start gap-3 cursor-pointer transition-colors"
                     style={{
                       padding: "11px 18px",
-                      borderBottom: i === items.length - 1 ? "none" : "1px solid #EEF1F7",
+                      borderBottom: i === filtered.length - 1 ? "none" : "1px solid #EEF1F7",
                       background: isSel ? "#F7F9FC" : "transparent",
                     }}
                     onMouseEnter={(e) => { if (!isSel) e.currentTarget.style.background = "#F7F9FC"; }}
@@ -107,46 +127,59 @@ function FeedbackPage() {
 
           {/* Right: detail */}
           <Card>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex gap-1.5">
-                <Badge text={current.type} color={typeColors[current.type].color} bg={typeColors[current.type].bg} />
-                <AppBadge name={current.app} />
+            {current ? (
+              <>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex gap-1.5">
+                    <Badge text={current.type} color={typeColors[current.type].color} bg={typeColors[current.type].bg} />
+                    <AppBadge name={current.app} />
+                  </div>
+                  <div style={{ fontSize: 11, color: "#8A96AA" }}>{current.time}</div>
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: "#1A1F2E", marginBottom: 3 }}>{current.subject}</div>
+                <div style={{ fontSize: 12, color: "#8A96AA", marginBottom: 14 }}>{current.sender} · {current.email}</div>
+                <div style={{ background: "#F7F9FC", border: "1px solid #EEF1F7", borderRadius: 8, padding: 12, fontSize: 12, color: "#3D5070", lineHeight: 1.6, marginBottom: 14 }}>
+                  {current.message}
+                </div>
+                <div style={{ color: "#8A96AA", fontSize: 11, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>
+                  Internal note
+                </div>
+                <textarea
+                  value={current.note}
+                  onChange={(e) => actions.updateFeedback(current.id, { note: e.target.value })}
+                  rows={3}
+                  placeholder="Add a note for your team..."
+                  style={{
+                    width: "100%",
+                    background: "#F7F9FC",
+                    border: "1px solid #E2E6EF",
+                    borderRadius: 8,
+                    padding: 10,
+                    fontSize: 12,
+                    color: "#1A1F2E",
+                    outline: "none",
+                    marginBottom: 10,
+                    resize: "vertical",
+                    fontFamily: "inherit",
+                  }}
+                />
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <Select
+                      value={current.status}
+                      onChange={(v) => actions.updateFeedback(current.id, { status: v as FeedbackStatus })}
+                      options={["New", "In progress", "Resolved"]}
+                      width="100%"
+                    />
+                  </div>
+                  <PrimaryButton onClick={() => actions.updateFeedback(current.id, { unread: false })}>Save</PrimaryButton>
+                </div>
+              </>
+            ) : (
+              <div style={{ padding: "40px 0", textAlign: "center", color: "#8A96AA", fontSize: 12 }}>
+                Select a feedback item to view details.
               </div>
-              <div style={{ fontSize: 11, color: "#8A96AA" }}>{current.time}</div>
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 500, color: "#1A1F2E", marginBottom: 3 }}>{current.subject}</div>
-            <div style={{ fontSize: 12, color: "#8A96AA", marginBottom: 14 }}>{current.sender} · {current.email}</div>
-            <div style={{ background: "#F7F9FC", border: "1px solid #EEF1F7", borderRadius: 8, padding: 12, fontSize: 12, color: "#3D5070", lineHeight: 1.6, marginBottom: 14 }}>
-              {current.message}
-            </div>
-            <div style={{ color: "#8A96AA", fontSize: 11, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>
-              Internal note
-            </div>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              rows={3}
-              placeholder="Add a note for your team..."
-              style={{
-                width: "100%",
-                background: "#F7F9FC",
-                border: "1px solid #E2E6EF",
-                borderRadius: 8,
-                padding: 10,
-                fontSize: 12,
-                color: "#1A1F2E",
-                outline: "none",
-                marginBottom: 10,
-                resize: "vertical",
-                fontFamily: "inherit",
-              }}
-            />
-            <div className="flex items-center gap-2">
-              <div className="flex-1">
-                <Select value={status} onChange={setStatus} options={["New", "In progress", "Resolved"]} width="100%" />
-              </div>
-              <PrimaryButton>Save</PrimaryButton>
-            </div>
+            )}
           </Card>
         </div>
       </PageContent>

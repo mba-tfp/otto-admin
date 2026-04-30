@@ -1,10 +1,17 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
 import { TopBar, PageContent, Card } from "../components/Layout";
 import { Select } from "../components/Form";
 
+const searchSchema = z.object({
+  app: fallback(z.string(), "All apps").default("All apps"),
+  range: fallback(z.string(), "Last 30 days").default("Last 30 days"),
+});
+
 export const Route = createFileRoute("/analytics")({
   head: () => ({ meta: [{ title: "Analytics — Otto Help Center Admin" }] }),
+  validateSearch: zodValidator(searchSchema),
   component: AnalyticsPage,
 });
 
@@ -18,26 +25,33 @@ function StatCard({ label, value, sub, subColor }: { label: string; value: strin
   );
 }
 
-const topArticles = [
-  { name: "Create Your First Session", pct: 100, views: 487 },
-  { name: "Using Templates", pct: 78, views: 381 },
-  { name: "Dictation & Recording", pct: 59, views: 288 },
-  { name: "Managing Letters", pct: 44, views: 214 },
-  { name: "AI Assistant Basics", pct: 33, views: 159 },
-  { name: "Account & Billing FAQ", pct: 24, views: 118 },
+const baseTopArticles = [
+  { name: "Create Your First Session", views: 487, app: "Otto Notes" },
+  { name: "Using Templates", views: 381, app: "Otto Notes" },
+  { name: "Dictation & Recording", views: 288, app: "Otto Notes" },
+  { name: "Managing Letters", views: 214, app: "Otto Notes" },
+  { name: "AI Assistant Basics", views: 159, app: "Otto Notes" },
+  { name: "Account & Billing FAQ", views: 118, app: "Otto Notes" },
+  { name: "Onboarding checklist", views: 94, app: "Onboarding" },
+  { name: "Importing patients", views: 71, app: "Onboarding" },
+  { name: "Cycle tracking basics", views: 68, app: "Fertiwise" },
 ];
-const topSearch = [
-  { name: "transcribe", pct: 100, count: 142 },
-  { name: "template", pct: 82, count: 116 },
-  { name: "GP letter", pct: 66, count: 94 },
-  { name: "dictate", pct: 50, count: 71 },
-  { name: "export PDF", pct: 35, count: 50 },
-  { name: "billing", pct: 22, count: 31 },
+
+const baseSearchTerms = [
+  { name: "transcribe", count: 142, app: "Otto Notes" },
+  { name: "template", count: 116, app: "Otto Notes" },
+  { name: "GP letter", count: 94, app: "Otto Notes" },
+  { name: "dictate", count: 71, app: "Otto Notes" },
+  { name: "export PDF", count: 50, app: "Otto Notes" },
+  { name: "billing", count: 31, app: "Otto Notes" },
+  { name: "import csv", count: 28, app: "Onboarding" },
+  { name: "cycle", count: 22, app: "Fertiwise" },
 ];
+
 const byApp = [
-  { name: "Otto Notes", height: 64, value: 1241 },
-  { name: "Onboarding", height: 21, value: 412 },
-  { name: "Fertiwise", height: 10, value: 194 },
+  { name: "Otto Notes", value: 1241 },
+  { name: "Onboarding", value: 412 },
+  { name: "Fertiwise", value: 194 },
 ];
 
 function BarRow({ name, pct, value, color }: { name: string; pct: number; value: number; color: string }) {
@@ -53,20 +67,41 @@ function BarRow({ name, pct, value, color }: { name: string; pct: number; value:
 }
 
 function AnalyticsPage() {
-  const [app, setApp] = useState("All apps");
-  const [range, setRange] = useState("Last 30 days");
+  const navigate = useNavigate();
+  const search = Route.useSearch();
+
+  const update = (patch: Partial<typeof search>) => {
+    navigate({ to: "/analytics", search: (prev) => ({ ...prev, ...patch }) });
+  };
+
+  const filtered = search.app === "All apps" ? baseTopArticles : baseTopArticles.filter((a) => a.app === search.app);
+  const filteredSearch = search.app === "All apps" ? baseSearchTerms : baseSearchTerms.filter((s) => s.app === search.app);
+
+  const articleMax = filtered[0]?.views ?? 1;
+  const termMax = filteredSearch[0]?.count ?? 1;
+
+  const totalViews = filtered.reduce((sum, a) => sum + a.views, 0);
+  const visibleApps = search.app === "All apps" ? byApp : byApp.filter((b) => b.name === search.app);
+  const appMax = Math.max(...visibleApps.map((b) => b.value), 1);
+
+  const isFiltered = search.app !== "All apps" || search.range !== "Last 30 days";
 
   return (
     <>
       <TopBar title="Analytics" />
       <PageContent>
         <div className="flex items-center gap-2 mb-4">
-          <Select value={app} onChange={setApp} options={["All apps", "Otto Notes", "Onboarding", "Fertiwise"]} />
-          <Select value={range} onChange={setRange} options={["Last 30 days", "Last 7 days", "Last 90 days"]} />
+          <Select value={search.app} onChange={(v) => update({ app: v })} options={["All apps", "Otto Notes", "Onboarding", "Fertiwise"]} />
+          <Select value={search.range} onChange={(v) => update({ range: v })} options={["Last 30 days", "Last 7 days", "Last 90 days"]} />
+          {isFiltered && (
+            <span style={{ fontSize: 11, color: "#8A96AA" }}>
+              Showing filtered view
+            </span>
+          )}
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-4">
-          <StatCard label="Total views" value="1,847" sub="+12% vs last month" subColor="#2D7D46" />
+          <StatCard label="Total views" value={totalViews.toLocaleString()} sub="+12% vs last month" subColor="#2D7D46" />
           <StatCard label="Avg. rating" value="4.2 / 5" sub="+0.3 vs last month" subColor="#2D7D46" />
           <StatCard label="Submissions" value="23" sub="5 unresolved" subColor="#92580A" />
         </div>
@@ -75,13 +110,21 @@ function AnalyticsPage() {
           <Card>
             <div style={{ fontSize: 13, fontWeight: 500, color: "#1B2B4B", marginBottom: 14 }}>Top articles by views</div>
             <div className="space-y-2.5">
-              {topArticles.map((a) => <BarRow key={a.name} name={a.name} pct={a.pct} value={a.views} color="#1B2B4B" />)}
+              {filtered.length === 0 ? (
+                <div style={{ fontSize: 12, color: "#8A96AA", textAlign: "center", padding: "20px 0" }}>No data for this app.</div>
+              ) : filtered.slice(0, 6).map((a) => (
+                <BarRow key={a.name} name={a.name} pct={Math.round((a.views / articleMax) * 100)} value={a.views} color="#1B2B4B" />
+              ))}
             </div>
           </Card>
           <Card>
             <div style={{ fontSize: 13, fontWeight: 500, color: "#1B2B4B", marginBottom: 14 }}>Top search terms</div>
             <div className="space-y-2.5">
-              {topSearch.map((s) => <BarRow key={s.name} name={s.name} pct={s.pct} value={s.count} color="#E5635A" />)}
+              {filteredSearch.length === 0 ? (
+                <div style={{ fontSize: 12, color: "#8A96AA", textAlign: "center", padding: "20px 0" }}>No data for this app.</div>
+              ) : filteredSearch.slice(0, 6).map((s) => (
+                <BarRow key={s.name} name={s.name} pct={Math.round((s.count / termMax) * 100)} value={s.count} color="#E5635A" />
+              ))}
             </div>
           </Card>
         </div>
@@ -89,13 +132,16 @@ function AnalyticsPage() {
         <Card>
           <div style={{ fontSize: 13, fontWeight: 500, color: "#1B2B4B", marginBottom: 20 }}>Views by app</div>
           <div className="flex items-end justify-around" style={{ height: 110, padding: "0 40px" }}>
-            {byApp.map((b) => (
-              <div key={b.name} className="flex flex-col items-center" style={{ width: 100 }}>
-                <div style={{ fontSize: 11, color: "#8A96AA", marginBottom: 6 }}>{b.value.toLocaleString()}</div>
-                <div style={{ width: 60, height: b.height, background: "#1B2B4B", borderRadius: "4px 4px 0 0" }} />
-                <div style={{ fontSize: 11, color: "#8A96AA", marginTop: 8 }}>{b.name}</div>
-              </div>
-            ))}
+            {visibleApps.map((b) => {
+              const h = Math.round((b.value / appMax) * 80) + 8;
+              return (
+                <div key={b.name} className="flex flex-col items-center" style={{ width: 100 }}>
+                  <div style={{ fontSize: 11, color: "#8A96AA", marginBottom: 6 }}>{b.value.toLocaleString()}</div>
+                  <div style={{ width: 60, height: h, background: "#1B2B4B", borderRadius: "4px 4px 0 0" }} />
+                  <div style={{ fontSize: 11, color: "#8A96AA", marginTop: 8 }}>{b.name}</div>
+                </div>
+              );
+            })}
           </div>
         </Card>
       </PageContent>
