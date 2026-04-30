@@ -71,7 +71,7 @@ function AnalyticsPage() {
   const search = Route.useSearch();
 
   const update = (patch: Partial<typeof search>) => {
-    navigate({ to: "/analytics", search: (prev) => ({ ...prev, ...patch }) });
+    navigate({ to: "/analytics", search: (prev: typeof search) => ({ ...prev, ...patch }) });
   };
 
   const filtered = search.app === "All apps" ? baseTopArticles : baseTopArticles.filter((a) => a.app === search.app);

@@ -25,7 +25,7 @@ function ContentPage() {
   const articles = useStore((s) => s.articles);
 
   const update = (patch: Partial<typeof search>) => {
-    navigate({ to: "/content", search: (prev) => ({ ...prev, ...patch }) });
+    navigate({ to: "/content", search: (prev: typeof search) => ({ ...prev, ...patch }) });
   };
 
   const filtered = articles.filter((a) => {
