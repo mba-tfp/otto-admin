@@ -6,15 +6,6 @@ import ImageExt from "@tiptap/extension-image";
 import { useRef } from "react";
 import { Bold, Italic, Underline as UIcon, Strikethrough, Heading2, Heading3, List, ListOrdered, Quote, Link as LinkIcon, Image as ImageIcon, Minus } from "lucide-react";
 
-const initialContent = `
-<p>Use voice recording to capture clinical notes hands-free. This app supports real-time transcription during consultations.</p>
-<h2>Getting started</h2>
-<p>Follow these steps to begin recording your first session.</p>
-<p><strong>Step 1:</strong> Click the Transcribe button in the session workspace to activate the microphone.</p>
-<p><strong>Step 2:</strong> Allow microphone access when prompted by your browser.</p>
-<p><strong>Step 3:</strong> Begin speaking — your words appear in the Transcript panel in real time.</p>
-`;
-
 function ToolbarBtn({ active, onClick, children }: { active?: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
@@ -42,7 +33,13 @@ function Divider() {
   return <div style={{ width: 1, height: 18, background: "#E2E6EF", margin: "0 4px" }} />;
 }
 
-export function TiptapEditor() {
+export function TiptapEditor({
+  content,
+  onChange,
+}: {
+  content: string;
+  onChange?: (html: string) => void;
+}) {
   const fileRef = useRef<HTMLInputElement>(null);
   const editor = useEditor({
     extensions: [
@@ -51,9 +48,12 @@ export function TiptapEditor() {
       LinkExt.configure({ openOnClick: false, HTMLAttributes: { target: "_blank" } }),
       ImageExt.configure({ inline: false, allowBase64: true }),
     ],
-    content: initialContent,
+    content: content || "<p></p>",
     editorProps: {
       attributes: { class: "tiptap-content" },
+    },
+    onUpdate: ({ editor }) => {
+      onChange?.(editor.getHTML());
     },
     immediatelyRender: false,
   });
