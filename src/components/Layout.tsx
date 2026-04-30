@@ -23,9 +23,9 @@ export function Sidebar() {
       className="fixed left-0 top-0 bottom-0 flex flex-col"
       style={{ width: 240, background: "var(--sidebar-bg)" }}
     >
-      <div className="px-5 pt-5 pb-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-        <div className="text-white font-medium" style={{ fontSize: 15 }}>Otto Help Center</div>
-        <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 2 }}>Admin Panel</div>
+      <div className="px-5 pt-5 pb-4" style={{ borderBottom: "1px solid #E2E6EF" }}>
+        <div style={{ color: "#1B2B4B", fontSize: 15, fontWeight: 500 }}>Otto Help Center</div>
+        <div style={{ color: "#8A96AA", fontSize: 11, marginTop: 2 }}>Admin Panel</div>
       </div>
 
       <nav className="flex-1 py-3 px-2 overflow-y-auto">
@@ -39,20 +39,22 @@ export function Sidebar() {
               className="flex items-center gap-2.5 px-3 py-2 rounded-md mb-0.5 transition-colors relative"
               style={{
                 fontSize: 13,
-                color: active ? "#fff" : "rgba(255,255,255,0.55)",
-                background: active ? "rgba(229,99,90,0.08)" : "transparent",
+                color: active ? "#1B2B4B" : "#5A7099",
+                background: active ? "#FFFFFF" : "transparent",
+                border: active ? "1px solid #E2E6EF" : "1px solid transparent",
                 borderLeft: active ? "2px solid #E5635A" : "2px solid transparent",
                 paddingLeft: active ? 10 : 12,
+                fontWeight: active ? 500 : 400,
               }}
               onMouseEnter={(e) => {
                 if (!active) {
-                  e.currentTarget.style.color = "rgba(255,255,255,0.85)";
-                  e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                  e.currentTarget.style.color = "#1B2B4B";
+                  e.currentTarget.style.background = "#FFFFFF";
                 }
               }}
               onMouseLeave={(e) => {
                 if (!active) {
-                  e.currentTarget.style.color = "rgba(255,255,255,0.55)";
+                  e.currentTarget.style.color = "#5A7099";
                   e.currentTarget.style.background = "transparent";
                 }
               }}
@@ -79,7 +81,7 @@ export function Sidebar() {
 
         <div
           className="uppercase tracking-wider mt-5 mb-1.5 px-3"
-          style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, fontWeight: 500 }}
+          style={{ color: "#8A96AA", fontSize: 10, fontWeight: 500 }}
         >
           Config
         </div>
@@ -93,10 +95,12 @@ export function Sidebar() {
               className="flex items-center gap-2.5 px-3 py-2 rounded-md mb-0.5"
               style={{
                 fontSize: 13,
-                color: active ? "#fff" : "rgba(255,255,255,0.55)",
-                background: active ? "rgba(229,99,90,0.08)" : "transparent",
+                color: active ? "#1B2B4B" : "#5A7099",
+                background: active ? "#FFFFFF" : "transparent",
+                border: active ? "1px solid #E2E6EF" : "1px solid transparent",
                 borderLeft: active ? "2px solid #E5635A" : "2px solid transparent",
                 paddingLeft: active ? 10 : 12,
+                fontWeight: active ? 500 : 400,
               }}
             >
               <Icon size={15} strokeWidth={1.75} />
@@ -106,14 +110,14 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="px-4 py-3 flex items-center gap-2.5" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+      <div className="px-4 py-3 flex items-center gap-2.5" style={{ borderTop: "1px solid #E2E6EF" }}>
         <div
           className="flex items-center justify-center font-medium"
           style={{
             width: 30,
             height: 30,
             borderRadius: 999,
-            background: "rgba(229,99,90,0.25)",
+            background: "rgba(229,99,90,0.15)",
             color: "#E5635A",
             fontSize: 11,
           }}
@@ -121,8 +125,8 @@ export function Sidebar() {
           SS
         </div>
         <div className="flex-1 min-w-0">
-          <div style={{ color: "rgba(255,255,255,0.8)", fontSize: 12 }}>Shahid Saya</div>
-          <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 10 }}>Administrator</div>
+          <div style={{ color: "#1B2B4B", fontSize: 12, fontWeight: 500 }}>Shahid Saya</div>
+          <div style={{ color: "#8A96AA", fontSize: 10 }}>Administrator</div>
         </div>
       </div>
     </aside>
