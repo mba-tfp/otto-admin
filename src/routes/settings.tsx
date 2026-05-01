@@ -226,34 +226,67 @@ function SettingsPage() {
                     <input
                       ref={fileRef}
                       type="file"
-                      accept="image/svg+xml,image/png"
+                      accept="image/svg+xml,image/png,image/jpeg"
                       style={{ display: "none" }}
                       onChange={onLogoUpload}
                     />
-                    <OutlineButton onClick={() => fileRef.current?.click()}>Upload logo</OutlineButton>
+                    {branding.logoDataUrl && (
+                      <img src={branding.logoDataUrl} alt="" style={{ height: 24, maxWidth: 80, objectFit: "contain", borderRadius: 4, border: "1px solid #E2E6EF", background: "#fff", padding: 2 }} />
+                    )}
+                    <OutlineButton onClick={() => fileRef.current?.click()}>{branding.logoDataUrl ? "Replace" : "Upload logo"}</OutlineButton>
                     {branding.logoFileName && (
-                      <>
-                        <span style={{ fontSize: 11, color: "#8A96AA" }}>{branding.logoFileName}</span>
-                        <button onClick={() => actions.updateBranding(activeApp, { logoFileName: null })} style={{ fontSize: 11, color: "#E5635A" }}>Remove</button>
-                      </>
+                      <button onClick={() => { actions.updateBranding(activeApp, { logoFileName: null, logoDataUrl: null }); toast("Logo removed"); }} style={{ fontSize: 11, color: "#E5635A" }}>Remove</button>
                     )}
                   </div>
                 }
               />
             </Card>
 
+            {/* Branding live preview */}
+            <div style={{ marginTop: 16 }}>
+              <SectionLabel>Live preview · {activeApp} help center</SectionLabel>
+              <div style={{ borderRadius: 10, overflow: "hidden", border: "1px solid #E2E6EF" }}>
+                <div style={{ background: branding.sidebarBg, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid #E2E6EF" }}>
+                  {branding.logoDataUrl ? (
+                    <img src={branding.logoDataUrl} alt="" style={{ height: 22, maxWidth: 100, objectFit: "contain" }} />
+                  ) : (
+                    <div style={{ width: 22, height: 22, borderRadius: 6, background: branding.primaryColor }} />
+                  )}
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#1B2B4B" }}>{branding.displayName}</div>
+                </div>
+                <div style={{ background: "#fff", padding: 14 }}>
+                  <div style={{ fontSize: 11, color: "#8A96AA", marginBottom: 6 }}>Help articles</div>
+                  <div style={{ fontSize: 13, color: "#1A1F2E", marginBottom: 10 }}>How do I get started?</div>
+                  <button style={{ background: branding.primaryColor, color: "#fff", border: 0, borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 500 }}>
+                    Read article
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div style={{ marginTop: 24 }}>
               <SectionLabel>API keys</SectionLabel>
               <Card padding="0 16px">
-                {apps.map((a, i) => (
-                  <SettingRow
-                    key={a}
-                    label={a}
-                    sub="Frontend content API key"
-                    isLast={i === apps.length - 1}
-                    control={<OutlineButton>Reveal</OutlineButton>}
-                  />
-                ))}
+                {apps.map((a, i) => {
+                  const isRev = revealed[a];
+                  const key = fakeKey(a);
+                  return (
+                    <SettingRow
+                      key={a}
+                      label={a}
+                      sub={isRev ? key : "Frontend content API key"}
+                      isLast={i === apps.length - 1}
+                      control={
+                        <div className="flex items-center gap-2">
+                          {isRev && (
+                            <OutlineButton onClick={() => { navigator.clipboard?.writeText(key); toast.success("API key copied"); }}>Copy</OutlineButton>
+                          )}
+                          <OutlineButton onClick={() => setRevealed((p) => ({ ...p, [a]: !p[a] }))}>{isRev ? "Hide" : "Reveal"}</OutlineButton>
+                        </div>
+                      }
+                    />
+                  );
+                })}
               </Card>
             </div>
           </div>
