@@ -87,8 +87,16 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
     setAttachments((p) => [...p, ...next]);
   };
 
-  const persist = (nextStatus?: Status) => {
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const persist = (nextStatus?: Status, opts?: { silent?: boolean }) => {
     const newStatus = nextStatus ?? status;
+    if (!title.trim() && newStatus !== "Draft") {
+      toast.error("Add a title before submitting");
+      return false;
+    }
     const next: Article = {
       id,
       title: title.trim() || "Untitled",
@@ -105,14 +113,34 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
     if (mode === "new") {
       navigate({ to: "/editor/$id", params: { id }, replace: true });
     }
+    if (!opts?.silent) {
+      const map: Record<Status, string> = {
+        Draft: "Draft saved",
+        "In review": "Submitted for review",
+        Approved: "Approved",
+        Live: "Published — now live",
+      };
+      toast.success(map[newStatus]);
+    }
+    return true;
   };
 
   const onSaveDraft = () => persist();
   const onSubmitForReview = () => persist("In review");
   const onApprove = () => persist("Approved");
-  const onRequestChanges = () => persist("Draft");
+  const onRequestChanges = () => { persist("Draft", { silent: true }); toast("Changes requested — back to draft"); };
   const onBackToDraft = () => persist("Draft");
   const onPublish = () => persist("Live");
+
+  const onDelete = () => {
+    if (mode === "edit" && articleId) {
+      actions.deleteArticle(articleId);
+      toast(`Deleted "${title || "Untitled"}"`);
+      navigate({ to: "/content", search: {} });
+    } else {
+      navigate({ to: "/content", search: {} });
+    }
+  };
 
   // Top bar action varies with status
   const topBarAction = (() => {
