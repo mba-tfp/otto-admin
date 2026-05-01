@@ -168,7 +168,17 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
 
   return (
     <>
-      <TopBar title={mode === "new" ? "New content" : "Edit content"} action={topBarAction} />
+      <TopBar
+        title={
+          <>
+            <Link to="/content" search={{ q: "", type: "All types", app: "All apps", status: "All statuses" }} style={{ color: "#8A96AA", display: "inline-flex", alignItems: "center", padding: 4, marginLeft: -4 }}>
+              <ArrowLeft size={16} />
+            </Link>
+            <span>{mode === "new" ? "New content" : "Edit content"}</span>
+          </>
+        }
+        action={topBarAction}
+      />
       <PageContent>
         {/* Workflow progress */}
         <div className="flex mb-5" style={{ borderRadius: 8, overflow: "hidden" }}>
