@@ -1,9 +1,11 @@
 import { useRef, useState, useMemo, useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, Link } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { TopBar, PrimaryButton, OutlineButton, PageContent, Card } from "./Layout";
 import { TextInput, Select, Label } from "./Form";
 import { TiptapEditor } from "./TiptapEditor";
-import { FileText, X } from "lucide-react";
+import { FileText, X, ArrowLeft, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { actions, useStore, type Status, type ContentType, type Article } from "../data/store";
 
 type Attachment = { id: string; name: string; size: number };
