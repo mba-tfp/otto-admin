@@ -364,7 +364,7 @@ function SettingsPage() {
               actions.addTeamMember(m);
             }
           }}
-          onRemove={memberDialog.member ? () => actions.removeTeamMember(memberDialog.member!.id) : undefined}
+          onRemove={memberDialog.member ? () => { const n = memberDialog.member!.name; actions.removeTeamMember(memberDialog.member!.id); toast(`Removed ${n}`); } : undefined}
         />
       )}
     </>
