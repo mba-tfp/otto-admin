@@ -1,10 +1,13 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { TopBar, PrimaryButton, PageContent, StatusBadge, AppBadge, TypeBadge, OutlineButton } from "../components/Layout";
 import { Select, TextInput } from "../components/Form";
-import { Search } from "lucide-react";
-import { useStore } from "../data/store";
+import { Search, Trash2 } from "lucide-react";
+import { useStore, actions } from "../data/store";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 
 const searchSchema = z.object({
   q: fallback(z.string(), "").default(""),
@@ -23,9 +26,22 @@ function ContentPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
   const articles = useStore((s) => s.articles);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string } | null>(null);
 
   const update = (patch: Partial<typeof search>) => {
     navigate({ to: "/content", search: (prev: typeof search) => ({ ...prev, ...patch }) });
+  };
+
+  const confirmDelete = () => {
+    if (!pendingDelete) return;
+    actions.deleteArticle(pendingDelete.id);
+    toast(`Deleted "${pendingDelete.title}"`);
+    setPendingDelete(null);
+  };
+
+  const publishInPlace = (id: string, title: string) => {
+    actions.setArticleStatus(id, "Live");
+    toast.success(`Published "${title}"`);
   };
 
   const filtered = articles.filter((a) => {
@@ -82,7 +98,6 @@ function ContentPage() {
           <table className="w-full" style={{ borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                <th style={{ ...th, width: 38 }}><input type="checkbox" /></th>
                 <th style={th}>Title</th>
                 <th style={th}>Type</th>
                 <th style={th}>Apps</th>
@@ -95,8 +110,13 @@ function ContentPage() {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ padding: "40px 14px", textAlign: "center", color: "#8A96AA", fontSize: 12 }}>
-                    No content matches these filters.
+                  <td colSpan={7} style={{ padding: "40px 14px", textAlign: "center", color: "#8A96AA", fontSize: 12 }}>
+                    <div>No content matches these filters.</div>
+                    {filtersActive && (
+                      <button onClick={() => navigate({ to: "/content", search: {} })} style={{ marginTop: 10, fontSize: 12, color: "#E5635A" }}>
+                        Clear filters
+                      </button>
+                    )}
                   </td>
                 </tr>
               ) : filtered.map((r, i) => {
@@ -104,12 +124,11 @@ function ContentPage() {
                 return (
                   <tr
                     key={r.id}
-                    className="transition-colors"
+                    className="transition-colors group"
                     style={{ borderTop: i === 0 ? "none" : "1px solid #EEF1F7" }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = "#F7F9FC")}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                   >
-                    <td style={td}><input type="checkbox" onClick={(e) => e.stopPropagation()} /></td>
                     <td style={{ ...td, fontWeight: 500 }}>
                       <Link to="/editor/$id" params={{ id: r.id }} style={{ color: "#1A1F2E", textDecoration: "none" }}>
                         {r.title}
@@ -125,11 +144,23 @@ function ContentPage() {
                     <td style={{ ...td, color: "#8A96AA" }}>{r.date}</td>
                     <td style={{ ...td, color: "#8A96AA" }}>{r.author}</td>
                     <td style={{ ...td, textAlign: "right" }}>
-                      {action === "Publish" ? (
-                        <PrimaryButton onClick={() => navigate({ to: "/editor/$id", params: { id: r.id } })}>Publish</PrimaryButton>
-                      ) : (
-                        <OutlineButton onClick={() => navigate({ to: "/editor/$id", params: { id: r.id } })}>{action}</OutlineButton>
-                      )}
+                      <div className="flex items-center gap-2 justify-end">
+                        {action === "Publish" ? (
+                          <PrimaryButton onClick={() => publishInPlace(r.id, r.title)}>Publish</PrimaryButton>
+                        ) : (
+                          <OutlineButton onClick={() => navigate({ to: "/editor/$id", params: { id: r.id } })}>{action}</OutlineButton>
+                        )}
+                        <button
+                          onClick={() => setPendingDelete({ id: r.id, title: r.title })}
+                          aria-label="Delete article"
+                          title="Delete"
+                          style={{ color: "#8A96AA", padding: 6, borderRadius: 6 }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = "#A32D2D"; e.currentTarget.style.background = "#FCEBEB"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = "#8A96AA"; e.currentTarget.style.background = "transparent"; }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -138,6 +169,26 @@ function ContentPage() {
           </table>
         </div>
       </PageContent>
+
+      <Dialog open={!!pendingDelete} onOpenChange={(v) => !v && setPendingDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete this article?</DialogTitle>
+          </DialogHeader>
+          <p style={{ fontSize: 13, color: "#5A7099" }}>
+            "{pendingDelete?.title}" will be permanently removed. This cannot be undone.
+          </p>
+          <DialogFooter>
+            <OutlineButton onClick={() => setPendingDelete(null)}>Cancel</OutlineButton>
+            <button
+              onClick={confirmDelete}
+              style={{ background: "#A32D2D", color: "#fff", borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 500 }}
+            >
+              Delete
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

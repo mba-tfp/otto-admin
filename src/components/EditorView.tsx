@@ -1,9 +1,11 @@
 import { useRef, useState, useMemo, useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, Link } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { TopBar, PrimaryButton, OutlineButton, PageContent, Card } from "./Layout";
 import { TextInput, Select, Label } from "./Form";
 import { TiptapEditor } from "./TiptapEditor";
-import { FileText, X } from "lucide-react";
+import { FileText, X, ArrowLeft, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { actions, useStore, type Status, type ContentType, type Article } from "../data/store";
 
 type Attachment = { id: string; name: string; size: number };
@@ -85,8 +87,16 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
     setAttachments((p) => [...p, ...next]);
   };
 
-  const persist = (nextStatus?: Status) => {
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const persist = (nextStatus?: Status, opts?: { silent?: boolean }) => {
     const newStatus = nextStatus ?? status;
+    if (!title.trim() && newStatus !== "Draft") {
+      toast.error("Add a title before submitting");
+      return false;
+    }
     const next: Article = {
       id,
       title: title.trim() || "Untitled",
@@ -103,14 +113,34 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
     if (mode === "new") {
       navigate({ to: "/editor/$id", params: { id }, replace: true });
     }
+    if (!opts?.silent) {
+      const map: Record<Status, string> = {
+        Draft: "Draft saved",
+        "In review": "Submitted for review",
+        Approved: "Approved",
+        Live: "Published — now live",
+      };
+      toast.success(map[newStatus]);
+    }
+    return true;
   };
 
   const onSaveDraft = () => persist();
   const onSubmitForReview = () => persist("In review");
   const onApprove = () => persist("Approved");
-  const onRequestChanges = () => persist("Draft");
+  const onRequestChanges = () => { persist("Draft", { silent: true }); toast("Changes requested — back to draft"); };
   const onBackToDraft = () => persist("Draft");
   const onPublish = () => persist("Live");
+
+  const onDelete = () => {
+    if (mode === "edit" && articleId) {
+      actions.deleteArticle(articleId);
+      toast(`Deleted "${title || "Untitled"}"`);
+      navigate({ to: "/content", search: {} });
+    } else {
+      navigate({ to: "/content", search: {} });
+    }
+  };
 
   // Top bar action varies with status
   const topBarAction = (() => {
@@ -138,7 +168,17 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
 
   return (
     <>
-      <TopBar title={mode === "new" ? "New content" : "Edit content"} action={topBarAction} />
+      <TopBar
+        title={
+          <>
+            <Link to="/content" search={{ q: "", type: "All types", app: "All apps", status: "All statuses" }} style={{ color: "#8A96AA", display: "inline-flex", alignItems: "center", padding: 4, marginLeft: -4 }}>
+              <ArrowLeft size={16} />
+            </Link>
+            <span>{mode === "new" ? "New content" : "Edit content"}</span>
+          </>
+        }
+        action={topBarAction}
+      />
       <PageContent>
         {/* Workflow progress */}
         <div className="flex mb-5" style={{ borderRadius: 8, overflow: "hidden" }}>
@@ -417,6 +457,7 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
                 }) : <div style={{ fontSize: 11, color: "#8A96AA" }}>Select an app tag first</div>}
               </div>
               <button
+                onClick={() => setPreviewOpen(true)}
                 style={{
                   width: "100%",
                   background: "#fff",
@@ -432,13 +473,32 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
               </button>
             </Card>
 
+            {/* Danger zone */}
+            <Card padding={16}>
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="flex items-center justify-center gap-1.5"
+                style={{ width: "100%", color: "#A32D2D", fontSize: 12, padding: "6px 0", fontWeight: 500 }}
+              >
+                <Trash2 size={13} /> Delete article
+              </button>
+            </Card>
+
             {/* Info */}
             {savedOnce && (
               <Card padding="0 16px">
                 {[
                   { l: "Last edited", v: article?.date ?? new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) },
                   { l: "Author", v: article?.author ?? "Shahid S." },
-                  { l: "Version", v: <>v{article ? 3 : 1} · <span style={{ color: "#E5635A" }}>View history</span></> },
+                  {
+                    l: "Version",
+                    v: (
+                      <>
+                        v{article ? 3 : 1} ·{" "}
+                        <button onClick={() => setHistoryOpen(true)} style={{ color: "#E5635A", padding: 0 }}>View history</button>
+                      </>
+                    ),
+                  },
                 ].map((row, i) => (
                   <div
                     key={row.l}
@@ -454,6 +514,80 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
           </div>
         </div>
       </PageContent>
+
+      {/* Preview modal */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Preview · {previewApp}</DialogTitle>
+          </DialogHeader>
+          <div style={{ borderRadius: 8, overflow: "hidden", border: "1px solid #E2E6EF", maxHeight: "60vh", overflowY: "auto" }}>
+            <div style={{ background: "#F7F9FC", padding: "10px 14px", borderBottom: "1px solid #E2E6EF", fontSize: 12, color: "#5A7099" }}>
+              {previewApp} Help Center
+            </div>
+            <div style={{ background: "#fff", padding: "20px 22px" }}>
+              <div style={{ fontSize: 11, color: "#8A96AA", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.04em" }}>{contentType}</div>
+              <h1 style={{ fontSize: 22, fontWeight: 600, color: "#1A1F2E", marginBottom: 14 }}>{title || "Untitled"}</h1>
+              <div className="tiptap-content" style={{ fontSize: 14, color: "#1A1F2E", lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: body || "<p style='color:#8A96AA'>No content yet.</p>" }} />
+            </div>
+          </div>
+          <DialogFooter>
+            <OutlineButton onClick={() => setPreviewOpen(false)}>Close</OutlineButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* History modal */}
+      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Version history</DialogTitle>
+          </DialogHeader>
+          <div>
+            {[
+              { v: "v3", who: article?.author ?? "Shahid S.", when: article?.date ?? "Today", note: "Current" },
+              { v: "v2", who: "A. Malik", when: "Apr 24", note: "Edits to intro" },
+              { v: "v1", who: "Shahid S.", when: "Apr 20", note: "Initial draft" },
+            ].map((h, i) => (
+              <div key={h.v} className="flex items-center justify-between" style={{ padding: "10px 0", borderTop: i === 0 ? "none" : "1px solid #EEF1F7" }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 500, color: "#1A1F2E" }}>{h.v} · {h.note}</div>
+                  <div style={{ fontSize: 11, color: "#8A96AA", marginTop: 2 }}>{h.who} · {h.when}</div>
+                </div>
+                {i === 0 ? (
+                  <span style={{ fontSize: 11, color: "#8A96AA" }}>Current</span>
+                ) : (
+                  <button onClick={() => { setHistoryOpen(false); toast(`Restored ${h.v}`); }} style={{ fontSize: 11, color: "#E5635A", fontWeight: 500 }}>Restore</button>
+                )}
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <OutlineButton onClick={() => setHistoryOpen(false)}>Close</OutlineButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirm */}
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete this article?</DialogTitle>
+          </DialogHeader>
+          <p style={{ fontSize: 13, color: "#5A7099" }}>
+            "{title || "Untitled"}" will be permanently removed. This cannot be undone.
+          </p>
+          <DialogFooter>
+            <OutlineButton onClick={() => setConfirmDelete(false)}>Cancel</OutlineButton>
+            <button
+              onClick={onDelete}
+              style={{ background: "#A32D2D", color: "#fff", borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 500 }}
+            >
+              Delete
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

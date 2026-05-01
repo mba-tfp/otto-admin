@@ -15,8 +15,11 @@ const configNav = [{ to: "/settings", label: "Settings", icon: SettingsIcon }];
 export function Sidebar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const unread = useStore((s) => s.feedback.filter((f) => f.unread).length);
-  const isActive = (to: string, exact?: boolean) =>
-    exact ? path === to : path === to || path.startsWith(to + "/") || path === to;
+  const isActive = (to: string, exact?: boolean) => {
+    if (exact) return path === to;
+    if (to === "/content" && path.startsWith("/editor")) return true;
+    return path === to || path.startsWith(to + "/");
+  };
 
   return (
     <aside
@@ -133,13 +136,13 @@ export function Sidebar() {
   );
 }
 
-export function TopBar({ title, action }: { title: string; action?: ReactNode }) {
+export function TopBar({ title, action }: { title: ReactNode; action?: ReactNode }) {
   return (
     <div
       className="flex items-center justify-between px-7 bg-white"
       style={{ height: 56, borderBottom: "1px solid var(--otto-border)" }}
     >
-      <div style={{ color: "#1B2B4B", fontSize: 15, fontWeight: 500 }}>{title}</div>
+      <div style={{ color: "#1B2B4B", fontSize: 15, fontWeight: 500 }} className="flex items-center gap-2">{title}</div>
       <div className="flex items-center gap-2">{action}</div>
     </div>
   );

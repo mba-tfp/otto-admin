@@ -1,10 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
-import { TopBar, PageContent, Card, AppBadge, Badge, PrimaryButton } from "../components/Layout";
+import { TopBar, PageContent, Card, AppBadge, Badge, PrimaryButton, OutlineButton } from "../components/Layout";
 import { Select } from "../components/Form";
 import { useStore, actions, type FeedbackType, type FeedbackStatus } from "../data/store";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 
 const searchSchema = z.object({
   type: fallback(z.string(), "All types").default("All types"),
@@ -62,9 +64,22 @@ function FeedbackPage() {
 
   const unreadCount = feedback.filter((f) => f.unread).length;
 
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [replyText, setReplyText] = useState("");
+
+  const sendReply = () => {
+    if (!replyText.trim()) { toast.error("Write a reply first"); return; }
+    setReplyOpen(false);
+    toast.success(`Reply sent to ${current?.sender}`);
+    setReplyText("");
+  };
+
   return (
     <>
-      <TopBar title="Feedback inbox" />
+      <TopBar
+        title="Feedback inbox"
+        action={unreadCount > 0 ? <OutlineButton onClick={() => { actions.markAllFeedbackRead(); toast(`Marked ${unreadCount} as read`); }}>Mark all read</OutlineButton> : undefined}
+      />
       <PageContent>
         <div className="flex items-center gap-2 mb-4">
           <Select value={search.type} onChange={(v) => update({ type: v })} options={["All types", "Bug report", "Support", "Feedback", "Rating"]} />
@@ -167,12 +182,13 @@ function FeedbackPage() {
                   <div className="flex-1">
                     <Select
                       value={current.status}
-                      onChange={(v) => actions.updateFeedback(current.id, { status: v as FeedbackStatus })}
+                      onChange={(v) => { actions.updateFeedback(current.id, { status: v as FeedbackStatus }); toast(`Status: ${v}`); }}
                       options={["New", "In progress", "Resolved"]}
                       width="100%"
                     />
                   </div>
-                  <PrimaryButton onClick={() => actions.updateFeedback(current.id, { unread: false })}>Save</PrimaryButton>
+                  <OutlineButton onClick={() => setReplyOpen(true)}>Reply</OutlineButton>
+                  <PrimaryButton onClick={() => { actions.updateFeedback(current.id, { status: "Resolved", unread: false }); toast.success("Marked resolved"); }}>Mark resolved</PrimaryButton>
                 </div>
               </>
             ) : (
@@ -183,6 +199,27 @@ function FeedbackPage() {
           </Card>
         </div>
       </PageContent>
+
+      <Dialog open={replyOpen} onOpenChange={setReplyOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reply to {current?.sender}</DialogTitle>
+          </DialogHeader>
+          <div style={{ fontSize: 11, color: "#8A96AA", marginBottom: 4 }}>To: {current?.email}</div>
+          <div style={{ fontSize: 11, color: "#8A96AA", marginBottom: 8 }}>Subject: Re: {current?.subject}</div>
+          <textarea
+            value={replyText}
+            onChange={(e) => setReplyText(e.target.value)}
+            rows={6}
+            placeholder="Write your reply..."
+            style={{ width: "100%", border: "1px solid #E2E6EF", borderRadius: 8, padding: 10, fontSize: 12, color: "#1A1F2E", outline: "none", resize: "vertical", fontFamily: "inherit" }}
+          />
+          <DialogFooter>
+            <OutlineButton onClick={() => setReplyOpen(false)}>Cancel</OutlineButton>
+            <PrimaryButton onClick={sendReply}>Send reply</PrimaryButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

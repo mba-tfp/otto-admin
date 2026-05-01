@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { TopBar, PrimaryButton, OutlineButton, PageContent, Card, Badge } from "../components/Layout";
 import { TextInput, Select } from "../components/Form";
 import { useStore, actions, type AppName, type TeamMember } from "../data/store";
@@ -60,21 +61,26 @@ function MemberDialog({
   const [name, setName] = useState(member?.name ?? "");
   const [email, setEmail] = useState(member?.email ?? "");
   const [role, setRole] = useState<"Admin" | "Editor">(member?.role ?? "Editor");
+  const [emailErr, setEmailErr] = useState("");
 
-  // Reset when dialog (re)opens with different member
-  useState(() => {
+  // Sync when the member prop changes (open editing a different row)
+  useEffect(() => {
     setName(member?.name ?? "");
     setEmail(member?.email ?? "");
     setRole(member?.role ?? "Editor");
-  });
+    setEmailErr("");
+  }, [member?.id]);
 
   const handleSave = () => {
-    if (!email.trim()) return;
+    const trimmed = email.trim();
+    if (!trimmed) { setEmailErr("Email is required"); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) { setEmailErr("Enter a valid email address"); return; }
     onSave({
-      name: name.trim() || email.split("@")[0],
-      email: email.trim(),
+      name: name.trim() || trimmed.split("@")[0],
+      email: trimmed,
       role,
     });
+    toast.success(isInvite ? `Invite sent to ${trimmed}` : "Member updated");
     onOpenChange(false);
   };
 
@@ -93,7 +99,8 @@ function MemberDialog({
           )}
           <div>
             <div style={{ fontSize: 11, color: "#8A96AA", marginBottom: 4, fontWeight: 500 }}>EMAIL</div>
-            <TextInput value={email} onChange={setEmail} placeholder="name@otto.com" width="100%" />
+            <TextInput value={email} onChange={(v) => { setEmail(v); if (emailErr) setEmailErr(""); }} placeholder="name@otto.com" width="100%" />
+            {emailErr && <div style={{ fontSize: 11, color: "#A32D2D", marginTop: 4 }}>{emailErr}</div>}
           </div>
           <div>
             <div style={{ fontSize: 11, color: "#8A96AA", marginBottom: 4, fontWeight: 500 }}>ROLE</div>
@@ -141,12 +148,22 @@ function SettingsPage() {
 
   const onLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (f) actions.updateBranding(activeApp, { logoFileName: f.name });
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      actions.updateBranding(activeApp, { logoFileName: f.name, logoDataUrl: reader.result as string });
+      toast.success(`Uploaded ${f.name}`);
+    };
+    reader.readAsDataURL(f);
+    e.target.value = "";
   };
+
+  const fakeKey = (app: AppName) => "sk_otto_" + app.toLowerCase().replace(/\s/g, "_") + "_••••" + (app.length * 7 + 1234);
+  const [revealed, setRevealed] = useState<Record<string, boolean>>({});
 
   return (
     <>
-      <TopBar title="Settings" action={<PrimaryButton>Save changes</PrimaryButton>} />
+      <TopBar title="Settings" action={<PrimaryButton onClick={() => toast.success("Settings saved")}>Save changes</PrimaryButton>} />
       <PageContent>
         <div className="grid grid-cols-2 gap-4">
           {/* LEFT */}
@@ -209,34 +226,67 @@ function SettingsPage() {
                     <input
                       ref={fileRef}
                       type="file"
-                      accept="image/svg+xml,image/png"
+                      accept="image/svg+xml,image/png,image/jpeg"
                       style={{ display: "none" }}
                       onChange={onLogoUpload}
                     />
-                    <OutlineButton onClick={() => fileRef.current?.click()}>Upload logo</OutlineButton>
+                    {branding.logoDataUrl && (
+                      <img src={branding.logoDataUrl} alt="" style={{ height: 24, maxWidth: 80, objectFit: "contain", borderRadius: 4, border: "1px solid #E2E6EF", background: "#fff", padding: 2 }} />
+                    )}
+                    <OutlineButton onClick={() => fileRef.current?.click()}>{branding.logoDataUrl ? "Replace" : "Upload logo"}</OutlineButton>
                     {branding.logoFileName && (
-                      <>
-                        <span style={{ fontSize: 11, color: "#8A96AA" }}>{branding.logoFileName}</span>
-                        <button onClick={() => actions.updateBranding(activeApp, { logoFileName: null })} style={{ fontSize: 11, color: "#E5635A" }}>Remove</button>
-                      </>
+                      <button onClick={() => { actions.updateBranding(activeApp, { logoFileName: null, logoDataUrl: null }); toast("Logo removed"); }} style={{ fontSize: 11, color: "#E5635A" }}>Remove</button>
                     )}
                   </div>
                 }
               />
             </Card>
 
+            {/* Branding live preview */}
+            <div style={{ marginTop: 16 }}>
+              <SectionLabel>Live preview · {activeApp} help center</SectionLabel>
+              <div style={{ borderRadius: 10, overflow: "hidden", border: "1px solid #E2E6EF" }}>
+                <div style={{ background: branding.sidebarBg, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid #E2E6EF" }}>
+                  {branding.logoDataUrl ? (
+                    <img src={branding.logoDataUrl} alt="" style={{ height: 22, maxWidth: 100, objectFit: "contain" }} />
+                  ) : (
+                    <div style={{ width: 22, height: 22, borderRadius: 6, background: branding.primaryColor }} />
+                  )}
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#1B2B4B" }}>{branding.displayName}</div>
+                </div>
+                <div style={{ background: "#fff", padding: 14 }}>
+                  <div style={{ fontSize: 11, color: "#8A96AA", marginBottom: 6 }}>Help articles</div>
+                  <div style={{ fontSize: 13, color: "#1A1F2E", marginBottom: 10 }}>How do I get started?</div>
+                  <button style={{ background: branding.primaryColor, color: "#fff", border: 0, borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 500 }}>
+                    Read article
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div style={{ marginTop: 24 }}>
               <SectionLabel>API keys</SectionLabel>
               <Card padding="0 16px">
-                {apps.map((a, i) => (
-                  <SettingRow
-                    key={a}
-                    label={a}
-                    sub="Frontend content API key"
-                    isLast={i === apps.length - 1}
-                    control={<OutlineButton>Reveal</OutlineButton>}
-                  />
-                ))}
+                {apps.map((a, i) => {
+                  const isRev = revealed[a];
+                  const key = fakeKey(a);
+                  return (
+                    <SettingRow
+                      key={a}
+                      label={a}
+                      sub={isRev ? key : "Frontend content API key"}
+                      isLast={i === apps.length - 1}
+                      control={
+                        <div className="flex items-center gap-2">
+                          {isRev && (
+                            <OutlineButton onClick={() => { navigator.clipboard?.writeText(key); toast.success("API key copied"); }}>Copy</OutlineButton>
+                          )}
+                          <OutlineButton onClick={() => setRevealed((p) => ({ ...p, [a]: !p[a] }))}>{isRev ? "Hide" : "Reveal"}</OutlineButton>
+                        </div>
+                      }
+                    />
+                  );
+                })}
               </Card>
             </div>
           </div>
@@ -314,7 +364,7 @@ function SettingsPage() {
               actions.addTeamMember(m);
             }
           }}
-          onRemove={memberDialog.member ? () => actions.removeTeamMember(memberDialog.member!.id) : undefined}
+          onRemove={memberDialog.member ? () => { const n = memberDialog.member!.name; actions.removeTeamMember(memberDialog.member!.id); toast(`Removed ${n}`); } : undefined}
         />
       )}
     </>

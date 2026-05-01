@@ -1,8 +1,9 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { TopBar, PageContent, Card } from "../components/Layout";
 import { Select } from "../components/Form";
+import { useStore } from "../data/store";
 
 const searchSchema = z.object({
   app: fallback(z.string(), "All apps").default("All apps"),
@@ -69,20 +70,30 @@ function BarRow({ name, pct, value, color }: { name: string; pct: number; value:
 function AnalyticsPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
+  const feedback = useStore((s) => s.feedback);
 
   const update = (patch: Partial<typeof search>) => {
     navigate({ to: "/analytics", search: (prev: typeof search) => ({ ...prev, ...patch }) });
   };
 
-  const filtered = search.app === "All apps" ? baseTopArticles : baseTopArticles.filter((a) => a.app === search.app);
-  const filteredSearch = search.app === "All apps" ? baseSearchTerms : baseSearchTerms.filter((s) => s.app === search.app);
+  const rangeMultiplier = search.range === "Last 7 days" ? 0.25 : search.range === "Last 90 days" ? 2.8 : 1;
+  const scale = (n: number) => Math.round(n * rangeMultiplier);
+
+  const filtered = (search.app === "All apps" ? baseTopArticles : baseTopArticles.filter((a) => a.app === search.app))
+    .map((a) => ({ ...a, views: scale(a.views) }));
+  const filteredSearch = (search.app === "All apps" ? baseSearchTerms : baseSearchTerms.filter((s) => s.app === search.app))
+    .map((t) => ({ ...t, count: scale(t.count) }));
 
   const articleMax = filtered[0]?.views ?? 1;
   const termMax = filteredSearch[0]?.count ?? 1;
 
   const totalViews = filtered.reduce((sum, a) => sum + a.views, 0);
-  const visibleApps = search.app === "All apps" ? byApp : byApp.filter((b) => b.name === search.app);
+  const visibleApps = (search.app === "All apps" ? byApp : byApp.filter((b) => b.name === search.app))
+    .map((b) => ({ ...b, value: scale(b.value) }));
   const appMax = Math.max(...visibleApps.map((b) => b.value), 1);
+
+  const submissions = feedback.length;
+  const unresolved = feedback.filter((f) => f.status !== "Resolved").length;
 
   const isFiltered = search.app !== "All apps" || search.range !== "Last 30 days";
 
@@ -101,9 +112,11 @@ function AnalyticsPage() {
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-4">
-          <StatCard label="Total views" value={totalViews.toLocaleString()} sub="+12% vs last month" subColor="#2D7D46" />
-          <StatCard label="Avg. rating" value="4.2 / 5" sub="+0.3 vs last month" subColor="#2D7D46" />
-          <StatCard label="Submissions" value="23" sub="5 unresolved" subColor="#92580A" />
+          <StatCard label="Total views" value={totalViews.toLocaleString()} sub={`${search.range.toLowerCase()}`} subColor="#2D7D46" />
+          <StatCard label="Avg. rating" value="4.2 / 5" sub="+0.3 vs last period" subColor="#2D7D46" />
+          <Link to="/feedback" search={{ type: "All types", app: "All apps", status: "All statuses", selected: undefined }} style={{ textDecoration: "none" }}>
+            <StatCard label="Submissions" value={String(submissions)} sub={`${unresolved} unresolved →`} subColor="#92580A" />
+          </Link>
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-4">

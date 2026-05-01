@@ -38,6 +38,7 @@ export type Branding = {
   sidebarBg: string;
   displayName: string;
   logoFileName: string | null;
+  logoDataUrl: string | null;
 };
 
 export type TeamMember = {
@@ -75,9 +76,9 @@ const initialFeedback: FeedbackItem[] = [
 ];
 
 const initialBranding: Record<AppName, Branding> = {
-  "Otto Notes": { primaryColor: "#E5635A", sidebarBg: "#EEF1F7", displayName: "Otto Notes", logoFileName: null },
-  "Onboarding": { primaryColor: "#3C3489", sidebarBg: "#EEEDFE", displayName: "Otto Onboarding", logoFileName: null },
-  "Fertiwise": { primaryColor: "#2D7D46", sidebarBg: "#EAF3DE", displayName: "Fertiwise", logoFileName: null },
+  "Otto Notes": { primaryColor: "#E5635A", sidebarBg: "#EEF1F7", displayName: "Otto Notes", logoFileName: null, logoDataUrl: null },
+  "Onboarding": { primaryColor: "#3C3489", sidebarBg: "#EEEDFE", displayName: "Otto Onboarding", logoFileName: null, logoDataUrl: null },
+  "Fertiwise": { primaryColor: "#2D7D46", sidebarBg: "#EAF3DE", displayName: "Fertiwise", logoFileName: null, logoDataUrl: null },
 };
 
 const initialTeam: TeamMember[] = [
@@ -126,6 +127,12 @@ export const actions = {
       ...s,
       articles: s.articles.map((a) => (a.id === id ? { ...a, status } : a)),
     }));
+  },
+  deleteArticle(id: string) {
+    setState((s) => ({ ...s, articles: s.articles.filter((a) => a.id !== id) }));
+  },
+  markAllFeedbackRead() {
+    setState((s) => ({ ...s, feedback: s.feedback.map((f) => ({ ...f, unread: false })) }));
   },
   newArticleId() {
     return "a" + Math.random().toString(36).slice(2, 9);
