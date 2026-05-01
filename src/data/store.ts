@@ -128,6 +128,12 @@ export const actions = {
       articles: s.articles.map((a) => (a.id === id ? { ...a, status } : a)),
     }));
   },
+  deleteArticle(id: string) {
+    setState((s) => ({ ...s, articles: s.articles.filter((a) => a.id !== id) }));
+  },
+  markAllFeedbackRead() {
+    setState((s) => ({ ...s, feedback: s.feedback.map((f) => ({ ...f, unread: false })) }));
+  },
   newArticleId() {
     return "a" + Math.random().toString(36).slice(2, 9);
   },
