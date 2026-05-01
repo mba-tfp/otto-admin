@@ -133,13 +133,13 @@ export function Sidebar() {
   );
 }
 
-export function TopBar({ title, action }: { title: string; action?: ReactNode }) {
+export function TopBar({ title, action }: { title: ReactNode; action?: ReactNode }) {
   return (
     <div
       className="flex items-center justify-between px-7 bg-white"
       style={{ height: 56, borderBottom: "1px solid var(--otto-border)" }}
     >
-      <div style={{ color: "#1B2B4B", fontSize: 15, fontWeight: 500 }}>{title}</div>
+      <div style={{ color: "#1B2B4B", fontSize: 15, fontWeight: 500 }} className="flex items-center gap-2">{title}</div>
       <div className="flex items-center gap-2">{action}</div>
     </div>
   );
