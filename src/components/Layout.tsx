@@ -15,8 +15,11 @@ const configNav = [{ to: "/settings", label: "Settings", icon: SettingsIcon }];
 export function Sidebar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const unread = useStore((s) => s.feedback.filter((f) => f.unread).length);
-  const isActive = (to: string, exact?: boolean) =>
-    exact ? path === to : path === to || path.startsWith(to + "/") || path === to;
+  const isActive = (to: string, exact?: boolean) => {
+    if (exact) return path === to;
+    if (to === "/content" && path.startsWith("/editor")) return true;
+    return path === to || path.startsWith(to + "/");
+  };
 
   return (
     <aside
