@@ -114,7 +114,7 @@ function AnalyticsPage() {
         <div className="grid grid-cols-3 gap-4 mb-4">
           <StatCard label="Total views" value={totalViews.toLocaleString()} sub={`${search.range.toLowerCase()}`} subColor="#2D7D46" />
           <StatCard label="Avg. rating" value="4.2 / 5" sub="+0.3 vs last period" subColor="#2D7D46" />
-          <Link to="/feedback" style={{ textDecoration: "none" }}>
+          <Link to="/feedback" search={{}} style={{ textDecoration: "none" }}>
             <StatCard label="Submissions" value={String(submissions)} sub={`${unresolved} unresolved →`} subColor="#92580A" />
           </Link>
         </div>
