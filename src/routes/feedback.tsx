@@ -64,9 +64,22 @@ function FeedbackPage() {
 
   const unreadCount = feedback.filter((f) => f.unread).length;
 
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [replyText, setReplyText] = useState("");
+
+  const sendReply = () => {
+    if (!replyText.trim()) { toast.error("Write a reply first"); return; }
+    setReplyOpen(false);
+    toast.success(`Reply sent to ${current?.sender}`);
+    setReplyText("");
+  };
+
   return (
     <>
-      <TopBar title="Feedback inbox" />
+      <TopBar
+        title="Feedback inbox"
+        action={unreadCount > 0 ? <OutlineButton onClick={() => { actions.markAllFeedbackRead(); toast(`Marked ${unreadCount} as read`); }}>Mark all read</OutlineButton> : undefined}
+      />
       <PageContent>
         <div className="flex items-center gap-2 mb-4">
           <Select value={search.type} onChange={(v) => update({ type: v })} options={["All types", "Bug report", "Support", "Feedback", "Rating"]} />
