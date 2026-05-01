@@ -148,12 +148,22 @@ function SettingsPage() {
 
   const onLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (f) actions.updateBranding(activeApp, { logoFileName: f.name });
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      actions.updateBranding(activeApp, { logoFileName: f.name, logoDataUrl: reader.result as string });
+      toast.success(`Uploaded ${f.name}`);
+    };
+    reader.readAsDataURL(f);
+    e.target.value = "";
   };
+
+  const fakeKey = (app: AppName) => "sk_otto_" + app.toLowerCase().replace(/\s/g, "_") + "_••••" + (app.length * 7 + 1234);
+  const [revealed, setRevealed] = useState<Record<string, boolean>>({});
 
   return (
     <>
-      <TopBar title="Settings" action={<PrimaryButton>Save changes</PrimaryButton>} />
+      <TopBar title="Settings" action={<PrimaryButton onClick={() => toast.success("Settings saved")}>Save changes</PrimaryButton>} />
       <PageContent>
         <div className="grid grid-cols-2 gap-4">
           {/* LEFT */}
