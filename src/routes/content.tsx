@@ -1,10 +1,13 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { TopBar, PrimaryButton, PageContent, StatusBadge, AppBadge, TypeBadge, OutlineButton } from "../components/Layout";
 import { Select, TextInput } from "../components/Form";
-import { Search } from "lucide-react";
-import { useStore } from "../data/store";
+import { Search, Trash2 } from "lucide-react";
+import { useStore, actions } from "../data/store";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 
 const searchSchema = z.object({
   q: fallback(z.string(), "").default(""),
