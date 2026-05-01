@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { TopBar, PrimaryButton, OutlineButton, PageContent, Card, Badge } from "../components/Layout";
 import { TextInput, Select } from "../components/Form";
 import { useStore, actions, type AppName, type TeamMember } from "../data/store";
@@ -60,21 +61,26 @@ function MemberDialog({
   const [name, setName] = useState(member?.name ?? "");
   const [email, setEmail] = useState(member?.email ?? "");
   const [role, setRole] = useState<"Admin" | "Editor">(member?.role ?? "Editor");
+  const [emailErr, setEmailErr] = useState("");
 
-  // Reset when dialog (re)opens with different member
-  useState(() => {
+  // Sync when the member prop changes (open editing a different row)
+  useEffect(() => {
     setName(member?.name ?? "");
     setEmail(member?.email ?? "");
     setRole(member?.role ?? "Editor");
-  });
+    setEmailErr("");
+  }, [member?.id]);
 
   const handleSave = () => {
-    if (!email.trim()) return;
+    const trimmed = email.trim();
+    if (!trimmed) { setEmailErr("Email is required"); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) { setEmailErr("Enter a valid email address"); return; }
     onSave({
-      name: name.trim() || email.split("@")[0],
-      email: email.trim(),
+      name: name.trim() || trimmed.split("@")[0],
+      email: trimmed,
       role,
     });
+    toast.success(isInvite ? `Invite sent to ${trimmed}` : "Member updated");
     onOpenChange(false);
   };
 
@@ -93,7 +99,8 @@ function MemberDialog({
           )}
           <div>
             <div style={{ fontSize: 11, color: "#8A96AA", marginBottom: 4, fontWeight: 500 }}>EMAIL</div>
-            <TextInput value={email} onChange={setEmail} placeholder="name@otto.com" width="100%" />
+            <TextInput value={email} onChange={(v) => { setEmail(v); if (emailErr) setEmailErr(""); }} placeholder="name@otto.com" width="100%" />
+            {emailErr && <div style={{ fontSize: 11, color: "#A32D2D", marginTop: 4 }}>{emailErr}</div>}
           </div>
           <div>
             <div style={{ fontSize: 11, color: "#8A96AA", marginBottom: 4, fontWeight: 500 }}>ROLE</div>
