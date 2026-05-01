@@ -26,9 +26,22 @@ function ContentPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
   const articles = useStore((s) => s.articles);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string } | null>(null);
 
   const update = (patch: Partial<typeof search>) => {
     navigate({ to: "/content", search: (prev: typeof search) => ({ ...prev, ...patch }) });
+  };
+
+  const confirmDelete = () => {
+    if (!pendingDelete) return;
+    actions.deleteArticle(pendingDelete.id);
+    toast(`Deleted "${pendingDelete.title}"`);
+    setPendingDelete(null);
+  };
+
+  const publishInPlace = (id: string, title: string) => {
+    actions.setArticleStatus(id, "Live");
+    toast.success(`Published "${title}"`);
   };
 
   const filtered = articles.filter((a) => {
