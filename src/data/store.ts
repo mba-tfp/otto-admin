@@ -21,6 +21,8 @@ export type Article = {
   callout?: { type: CalloutType; body: string } | null;
   steps?: ArticleStep[];
   relatedIds?: string[];
+  faqCategory?: string;
+  faqPairs?: { id: string; question: string; answer: string }[];
 };
 
 export type FeedbackType = "Bug report" | "Support" | "Feedback" | "Rating";

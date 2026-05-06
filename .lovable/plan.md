@@ -1,66 +1,65 @@
-
 ## Goal
-Extend `src/components/EditorView.tsx` so that when **Content Type = "Article"**, the editor exposes a Subtitle field plus three optional content blocks (Tips Callout, Steps, Related Articles). All other content types keep their existing UI.
+When **Content Type = "FAQ"**, replace the rich text body and supporting blocks with a dedicated Q&A interface (Category + reorderable Q&A cards). Article and What's-new editors stay unchanged.
 
 ## 1. Data model — `src/data/store.ts`
-Extend the `Article` type (all new fields optional so existing seed data stays valid):
+Extend `Article` with two optional fields (kept optional so seed data and other types stay valid):
 
 ```ts
-subtitle?: string;
-callout?: { type: "Tip" | "Warning" | "Note"; body: string };
-steps?: { id: string; title: string; description?: string }[];
-relatedIds?: string[];
+faqCategory?: string;
+faqPairs?: { id: string; question: string; answer: string }[];
 ```
 
-No changes to seed articles; `upsertArticle` already spreads the full object.
+No seed data changes. `upsertArticle` already spreads the full object.
 
 ## 2. Editor state — `src/components/EditorView.tsx`
-Add local state initialized from `article`:
-- `subtitle` (string)
-- `callout` (`{type, body} | null`)
-- `steps` (array, max 10)
-- `relatedIds` (string[], max 4)
-- `relatedQuery` (string, for the search input — not persisted)
+Add local state:
+- `faqCategory: string` (init from `article?.faqCategory ?? ""`)
+- `faqPairs: { id; question; answer }[]` — initialized from `article?.faqPairs`; if empty AND `contentType === "FAQ"`, default to one empty pair `[{ id: uuid, question: "", answer: "" }]`
+- `dragIndex: number | null` for drag-and-drop reorder
 
-Sync them in the existing `useEffect([article?.id])` block alongside title/body. Include them in the `next: Article` object built inside `persist()`.
+Sync both inside the existing `useEffect([article?.id])`. Persist them in `persist()`'s `next: Article` object, gated on `contentType === "FAQ"` (otherwise undefined).
 
-## 3. UI — only when `contentType === "Article"`
+When the user switches `contentType` to "FAQ" and `faqPairs` is empty, seed one empty pair via a small effect on `[contentType]`.
 
-### 3a. Subtitle (between Title and TiptapEditor)
-Plain `<input>` styled identically to the existing Title input (same width, same border/padding) but with `fontSize: 13, fontWeight: 400`. Label "Subtitle", placeholder "A short description shown in article list views". Insert directly after the Title input block (around line 227), before `<TiptapEditor …/>`.
+## 3. UI changes inside the LEFT card (when `contentType === "FAQ"`)
 
-### 3b. New blocks below Attachments
-Reuse the existing section-label pattern (`<Label>` component already used for "Video embed" / "Attachments"). Add three sibling `<div style={{ marginTop: 20 }}>` blocks after the Attachments block (after line 324), all gated by `contentType === "Article"`.
+Wrap the existing TiptapEditor + Video embed + Attachments blocks (lines ~271–366) in `{contentType !== "FAQ" && (…)}` so they disappear for FAQ. Keep the Title input as-is.
 
-**TIPS CALLOUT** (single, toggled on/off)
-- If `callout` is null: show a small `+ Add callout` outline button.
-- If set: render
-  - `Select` (existing `Form.tsx` component) with options `["Tip","Warning","Note"]` bound to `callout.type`.
-  - `<textarea>` for body (3 rows, same border/padding as Title).
-  - Live preview directly below: a div with `borderLeft: 4px solid <color>`, `background: <bg>`, `padding: 10px 12px`, type label in bold + body text under it.
-  - "Remove callout" link button (muted).
-- Color map:
-  - Tip → border `#2D7D46`, bg `#EAF3DE`
-  - Warning → border `#92580A`, bg `#FEF3E2`
-  - Note → border `#1A5FA5`, bg `#E6F1FB`
+Render a new FAQ section directly after Title (replaces the Article's Subtitle/Body area when FAQ is selected):
 
-**STEPS**
-- Render `steps.map((s, i) => …)` as rows: number badge `{i+1}`, two stacked inputs (title + description placeholder "Optional description"), trash icon button (`Trash2` from `lucide-react`, already imported) that removes that step.
-- Below the list: `+ Add step` outline button, disabled when `steps.length >= 10`. Helper text "Up to 10 steps" muted.
+### 3a. Category input
+- Label "Category"
+- `<input>` styled like Title (smaller fontSize 13)
+- Placeholder "e.g. Account & Billing, Getting Started, Privacy & Security"
+- Helper text below: "Groups related questions together in the help center" (muted, 11px)
 
-**RELATED ARTICLES**
-- Compute candidates: `useStore(s => s.articles)`, filter `status === "Live"` AND `id !== currentId` AND not already in `relatedIds` AND title matches `relatedQuery` (case-insensitive). Show only when `relatedQuery.trim()` is non-empty.
-- Search `<input>` with placeholder "Search articles to link…", bound to `relatedQuery`.
-- Dropdown: absolutely positioned panel under the input listing matches (max ~6); clicking adds the id to `relatedIds` (cap 4) and clears the query.
-- Selected chips below: render each related article's title in a pill with an `X` button to remove. Resolve title via the same articles list.
-- "+ Add" disabled / hidden once `relatedIds.length >= 4`.
-- Helper text below: "These appear at the bottom of the article in the help center".
+### 3b. Q&A pair cards
+For each pair, render a card (border `1px solid #E2E6EF`, radius 8, padding 12, white bg, marginBottom 10) using a flex layout:
 
-## 4. Things explicitly unchanged
-Title input, TiptapEditor, Video embed, Attachments, right sidebar (Content type, App tags, Workflow, Preview, metadata, Delete), workflow/persist/toast logic.
+- **Left edge**: drag handle button — a `GripVertical` icon (lucide-react) in muted color, `cursor: grab`. The card itself uses `draggable`, `onDragStart` sets `dragIndex=i`, `onDragOver` preventDefault, `onDrop` reorders by splicing.
+- **Top row in body**: muted label `Q{i+1}` (11px, color `#8A96AA`) on the left, trash icon button on the right (`Trash2`, removes pair).
+- **Question field**: Label "Question", plain `<input>` (same styling as Title input but fontSize 13)
+- **Answer field**: Label "Answer", `<TiptapEditor key={pair.id} content={pair.answer} onChange={(html) => updatePair(pair.id, { answer: html })} />` — same editor/toolbar as the article body.
+
+`updatePair(id, patch)` setter helper.
+
+### 3c. Add question button
+Below the last card: outline button `+ Add question` (reuse the styling pattern from `+ Add step`), appends `{ id: crypto.randomUUID(), question: "", answer: "" }`.
+
+### 3d. Empty state
+If `faqPairs.length === 0`, render a centered muted block (border-dashed, radius 8, padding 24, color `#8A96AA`, fontSize 13) saying:
+"No questions yet — click '+ Add question' to get started"
+The Add button is shown below the empty state too.
+
+## 4. RIGHT sidebar gating
+The right card already wraps Tips callout / Steps / Related articles in `{contentType === "Article" && (…)}` — no change needed; they stay hidden for FAQ. Content type / App tags / Workflow / Preview / Delete / metadata all stay.
+
+## 5. Things explicitly unchanged
+Title input, right sidebar (all sections), workflow logic, persistence flow, Article and What's-new editors.
 
 ## Technical notes
-- All new blocks must be wrapped in `{contentType === "Article" && (…)}` so FAQ and What's-new editors are unaffected.
-- New IDs for steps via `crypto.randomUUID()` (already used for attachments).
-- No new dependencies; reuse `lucide-react` icons (`Trash2`, `X`, `Plus` if needed — otherwise text "+ Add step").
-- `Article` type changes are additive and optional — no migration of existing data needed.
+- Add `GripVertical` to the lucide-react import on line 7.
+- Drag and drop: native HTML5 — set `draggable` on the card root, track `dragIndex` in state, on `onDrop` compute new array via splice. No new dependencies.
+- Each TiptapEditor instance gets `key={pair.id}` so reordering doesn't share editor state.
+- When persisting: `faqCategory: contentType === "FAQ" ? faqCategory : undefined`, `faqPairs: contentType === "FAQ" ? faqPairs : undefined`.
+- The existing `body` field is left untouched for FAQ articles (kept as whatever it was); not displayed.
