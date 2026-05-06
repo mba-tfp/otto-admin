@@ -5,6 +5,9 @@ export type AppName = "Otto Notes" | "Onboarding" | "Fertiwise";
 export type ContentType = "Article" | "FAQ" | "What's new";
 export type Status = "Draft" | "In review" | "Approved" | "Live";
 
+export type CalloutType = "Tip" | "Warning" | "Note";
+export type ArticleStep = { id: string; title: string; description?: string };
+
 export type Article = {
   id: string;
   title: string;
@@ -14,6 +17,10 @@ export type Article = {
   date: string;
   author: string;
   body: string;
+  subtitle?: string;
+  callout?: { type: CalloutType; body: string } | null;
+  steps?: ArticleStep[];
+  relatedIds?: string[];
 };
 
 export type FeedbackType = "Bug report" | "Support" | "Feedback" | "Rating";
