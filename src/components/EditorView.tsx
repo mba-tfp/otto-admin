@@ -246,6 +246,28 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
                 }}
               />
 
+              {contentType === "Article" && (
+                <>
+                  <Label>Subtitle</Label>
+                  <input
+                    value={subtitle}
+                    onChange={(e) => setSubtitle(e.target.value)}
+                    placeholder="A short description shown in article list views"
+                    style={{
+                      width: "100%",
+                      fontSize: 13,
+                      fontWeight: 400,
+                      border: "1px solid #E2E6EF",
+                      borderRadius: 8,
+                      padding: "8px 10px",
+                      marginBottom: 16,
+                      outline: "none",
+                      color: "#1A1F2E",
+                    }}
+                  />
+                </>
+              )}
+
               <TiptapEditor key={id} content={body} onChange={setBody} />
 
               {/* Video */}
