@@ -89,8 +89,17 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
       setCallout(article.callout ?? null);
       setSteps(article.steps ?? []);
       setRelatedIds(article.relatedIds ?? []);
+      setFaqCategory(article.faqCategory ?? "");
+      setFaqPairs(article.faqPairs ?? []);
     }
   }, [article?.id]);
+
+  // Seed one empty FAQ pair when switching to FAQ with no pairs
+  useEffect(() => {
+    if (contentType === "FAQ" && faqPairs.length === 0) {
+      setFaqPairs([{ id: crypto.randomUUID(), question: "", answer: "" }]);
+    }
+  }, [contentType]);
 
   const embedUrl = useMemo(() => getEmbedUrl(videoUrl), [videoUrl]);
 
