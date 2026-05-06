@@ -143,6 +143,8 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
       callout: contentType === "Article" ? callout : null,
       steps: contentType === "Article" ? steps : undefined,
       relatedIds: contentType === "Article" ? relatedIds : undefined,
+      faqCategory: contentType === "FAQ" ? faqCategory : undefined,
+      faqPairs: contentType === "FAQ" ? faqPairs : undefined,
     };
     actions.upsertArticle(next);
     setStatus(newStatus);
