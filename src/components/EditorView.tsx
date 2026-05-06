@@ -403,6 +403,285 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
                   );
                 })}
               </div>
+
+              {contentType === "Article" && (
+                <>
+                  {/* Tips callout */}
+                  <div style={{ marginTop: 20 }}>
+                    <Label>Tips callout</Label>
+                    {!callout ? (
+                      <button
+                        onClick={() => setCallout({ type: "Tip", body: "" })}
+                        style={{
+                          fontSize: 12,
+                          color: "#1B2B4B",
+                          fontWeight: 500,
+                          border: "1px solid #E2E6EF",
+                          borderRadius: 8,
+                          padding: "7px 12px",
+                          background: "#fff",
+                        }}
+                      >
+                        + Add callout
+                      </button>
+                    ) : (
+                      <div>
+                        <div className="flex items-center gap-2" style={{ marginBottom: 8 }}>
+                          <Select
+                            value={callout.type}
+                            onChange={(v) => setCallout({ ...callout, type: v as CalloutType })}
+                            options={["Tip", "Warning", "Note"]}
+                            width={140}
+                          />
+                          <button
+                            onClick={() => setCallout(null)}
+                            style={{ fontSize: 11, color: "#8A96AA", padding: "4px 6px" }}
+                          >
+                            Remove callout
+                          </button>
+                        </div>
+                        <textarea
+                          value={callout.body}
+                          onChange={(e) => setCallout({ ...callout, body: e.target.value })}
+                          placeholder="Enter callout text..."
+                          rows={3}
+                          style={{
+                            width: "100%",
+                            fontSize: 13,
+                            border: "1px solid #E2E6EF",
+                            borderRadius: 8,
+                            padding: "8px 10px",
+                            outline: "none",
+                            color: "#1A1F2E",
+                            resize: "vertical",
+                            marginBottom: 10,
+                          }}
+                        />
+                        <div
+                          style={{
+                            borderLeft: `4px solid ${calloutColors[callout.type].border}`,
+                            background: calloutColors[callout.type].bg,
+                            padding: "10px 12px",
+                            borderRadius: 4,
+                          }}
+                        >
+                          <div style={{ fontSize: 12, fontWeight: 700, color: calloutColors[callout.type].border, marginBottom: 4 }}>
+                            {callout.type}
+                          </div>
+                          <div style={{ fontSize: 13, color: "#1A1F2E", whiteSpace: "pre-wrap" }}>
+                            {callout.body || <span style={{ color: "#8A96AA" }}>Callout preview…</span>}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Steps */}
+                  <div style={{ marginTop: 20 }}>
+                    <Label>Steps</Label>
+                    {steps.length > 0 && (
+                      <div className="space-y-2" style={{ marginBottom: 8 }}>
+                        {steps.map((s, i) => (
+                          <div
+                            key={s.id}
+                            className="flex items-start gap-2"
+                            style={{ border: "1px solid #EEF1F7", borderRadius: 8, padding: 10, background: "#fff" }}
+                          >
+                            <div
+                              style={{
+                                width: 24,
+                                height: 24,
+                                borderRadius: 12,
+                                background: "#F0F3F8",
+                                color: "#1B2B4B",
+                                fontSize: 12,
+                                fontWeight: 600,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flexShrink: 0,
+                                marginTop: 2,
+                              }}
+                            >
+                              {i + 1}
+                            </div>
+                            <div className="flex-1 min-w-0 space-y-1.5">
+                              <input
+                                value={s.title}
+                                onChange={(e) =>
+                                  setSteps((p) => p.map((x) => (x.id === s.id ? { ...x, title: e.target.value } : x)))
+                                }
+                                placeholder="Step title"
+                                style={{
+                                  width: "100%",
+                                  fontSize: 13,
+                                  fontWeight: 500,
+                                  border: "1px solid #E2E6EF",
+                                  borderRadius: 6,
+                                  padding: "6px 8px",
+                                  outline: "none",
+                                  color: "#1A1F2E",
+                                }}
+                              />
+                              <input
+                                value={s.description ?? ""}
+                                onChange={(e) =>
+                                  setSteps((p) => p.map((x) => (x.id === s.id ? { ...x, description: e.target.value } : x)))
+                                }
+                                placeholder="Optional description"
+                                style={{
+                                  width: "100%",
+                                  fontSize: 12,
+                                  border: "1px solid #E2E6EF",
+                                  borderRadius: 6,
+                                  padding: "6px 8px",
+                                  outline: "none",
+                                  color: "#5A7099",
+                                }}
+                              />
+                            </div>
+                            <button
+                              onClick={() => setSteps((p) => p.filter((x) => x.id !== s.id))}
+                              style={{ color: "#8A96AA", padding: 4 }}
+                              aria-label="Delete step"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <button
+                      onClick={() =>
+                        setSteps((p) => [...p, { id: crypto.randomUUID(), title: "", description: "" }])
+                      }
+                      disabled={steps.length >= 10}
+                      className="flex items-center gap-1"
+                      style={{
+                        fontSize: 12,
+                        color: steps.length >= 10 ? "#B5BCC9" : "#1B2B4B",
+                        fontWeight: 500,
+                        border: "1px solid #E2E6EF",
+                        borderRadius: 8,
+                        padding: "7px 12px",
+                        background: "#fff",
+                        cursor: steps.length >= 10 ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      <Plus size={13} /> Add step
+                    </button>
+                    <div style={{ fontSize: 11, color: "#8A96AA", marginTop: 6 }}>Up to 10 steps</div>
+                  </div>
+
+                  {/* Related articles */}
+                  <div style={{ marginTop: 20 }}>
+                    <Label>Related articles</Label>
+                    <div style={{ position: "relative" }}>
+                      <input
+                        value={relatedQuery}
+                        onChange={(e) => setRelatedQuery(e.target.value)}
+                        placeholder="Search articles to link…"
+                        disabled={relatedIds.length >= 4}
+                        style={{
+                          width: "100%",
+                          fontSize: 13,
+                          border: "1px solid #E2E6EF",
+                          borderRadius: 8,
+                          padding: "8px 10px",
+                          outline: "none",
+                          color: "#1A1F2E",
+                          background: relatedIds.length >= 4 ? "#F7F9FC" : "#fff",
+                        }}
+                      />
+                      {relatedQuery.trim() && relatedIds.length < 4 && (() => {
+                        const q = relatedQuery.trim().toLowerCase();
+                        const matches = allArticles
+                          .filter(
+                            (a) =>
+                              a.status === "Live" &&
+                              a.id !== id &&
+                              !relatedIds.includes(a.id) &&
+                              a.title.toLowerCase().includes(q),
+                          )
+                          .slice(0, 6);
+                        if (matches.length === 0) return null;
+                        return (
+                          <div
+                            style={{
+                              position: "absolute",
+                              top: "100%",
+                              left: 0,
+                              right: 0,
+                              marginTop: 4,
+                              background: "#fff",
+                              border: "1px solid #E2E6EF",
+                              borderRadius: 8,
+                              boxShadow: "0 4px 14px rgba(20,30,55,0.08)",
+                              zIndex: 10,
+                              overflow: "hidden",
+                            }}
+                          >
+                            {matches.map((a) => (
+                              <button
+                                key={a.id}
+                                onClick={() => {
+                                  setRelatedIds((p) => (p.length >= 4 ? p : [...p, a.id]));
+                                  setRelatedQuery("");
+                                }}
+                                style={{
+                                  display: "block",
+                                  width: "100%",
+                                  textAlign: "left",
+                                  padding: "8px 12px",
+                                  fontSize: 13,
+                                  color: "#1A1F2E",
+                                  background: "#fff",
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.background = "#F7F9FC")}
+                                onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+                              >
+                                {a.title}
+                              </button>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                    {relatedIds.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5" style={{ marginTop: 8 }}>
+                        {relatedIds.map((rid) => {
+                          const a = allArticles.find((x) => x.id === rid);
+                          return (
+                            <div
+                              key={rid}
+                              className="flex items-center gap-1"
+                              style={{
+                                background: "#F0F3F8",
+                                borderRadius: 10,
+                                padding: "5px 6px 5px 11px",
+                                fontSize: 12,
+                                color: "#1A1F2E",
+                              }}
+                            >
+                              {a?.title ?? "Unknown"}
+                              <button
+                                onClick={() => setRelatedIds((p) => p.filter((x) => x !== rid))}
+                                style={{ color: "#8A96AA", padding: 2 }}
+                                aria-label="Remove related article"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <div style={{ fontSize: 11, color: "#8A96AA", marginTop: 6 }}>
+                      These appear at the bottom of the article in the help center
+                    </div>
+                  </div>
+                </>
+              )}
             </Card>
 
             {/* Workflow */}
