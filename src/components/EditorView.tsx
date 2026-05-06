@@ -50,12 +50,18 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
   // Local form state
   const [id] = useState(() => articleId ?? actions.newArticleId());
   const [title, setTitle] = useState(article?.title ?? "");
+  const [subtitle, setSubtitle] = useState(article?.subtitle ?? "");
   const [body, setBody] = useState(article?.body ?? "");
   const [contentType, setContentType] = useState<ContentType>(article?.type ?? "Article");
   const [appTags, setAppTags] = useState<string[]>(article?.apps ?? ["Otto Notes"]);
   const [status, setStatus] = useState<Status>(article?.status ?? "Draft");
   const [previewApp, setPreviewApp] = useState("Otto Notes");
   const [videoUrl, setVideoUrl] = useState("");
+  const [callout, setCallout] = useState<{ type: CalloutType; body: string } | null>(article?.callout ?? null);
+  const [steps, setSteps] = useState<ArticleStep[]>(article?.steps ?? []);
+  const [relatedIds, setRelatedIds] = useState<string[]>(article?.relatedIds ?? []);
+  const [relatedQuery, setRelatedQuery] = useState("");
+  const allArticles = useStore((s) => s.articles);
   const [attachments, setAttachments] = useState<Attachment[]>(
     mode === "edit" ? [{ id: "att1", name: "patient-consent-form.pdf", size: 214 * 1024 }] : []
   );
