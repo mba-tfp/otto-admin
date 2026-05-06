@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { TopBar, PrimaryButton, OutlineButton, PageContent, Card } from "./Layout";
 import { TextInput, Select, Label } from "./Form";
 import { TiptapEditor } from "./TiptapEditor";
-import { FileText, X, ArrowLeft, Trash2, Plus } from "lucide-react";
+import { FileText, X, ArrowLeft, Trash2, Plus, GripVertical } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { actions, useStore, type Status, type ContentType, type Article, type CalloutType, type ArticleStep } from "../data/store";
 
