@@ -4,9 +4,15 @@ import { toast } from "sonner";
 import { TopBar, PrimaryButton, OutlineButton, PageContent, Card } from "./Layout";
 import { TextInput, Select, Label } from "./Form";
 import { TiptapEditor } from "./TiptapEditor";
-import { FileText, X, ArrowLeft, Trash2 } from "lucide-react";
+import { FileText, X, ArrowLeft, Trash2, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
-import { actions, useStore, type Status, type ContentType, type Article } from "../data/store";
+import { actions, useStore, type Status, type ContentType, type Article, type CalloutType, type ArticleStep } from "../data/store";
+
+const calloutColors: Record<CalloutType, { border: string; bg: string }> = {
+  Tip: { border: "#2D7D46", bg: "#EAF3DE" },
+  Warning: { border: "#92580A", bg: "#FEF3E2" },
+  Note: { border: "#1A5FA5", bg: "#E6F1FB" },
+};
 
 type Attachment = { id: string; name: string; size: number };
 
