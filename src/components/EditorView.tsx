@@ -425,6 +425,8 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
                 </div>
               )}
 
+              {contentType !== "FAQ" && (
+              <>
               {/* Video */}
               <div style={{ marginTop: 20 }}>
                 <Label>Video embed</Label>
