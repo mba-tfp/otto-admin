@@ -73,10 +73,14 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
   useEffect(() => {
     if (article) {
       setTitle(article.title);
+      setSubtitle(article.subtitle ?? "");
       setBody(article.body);
       setContentType(article.type);
       setAppTags(article.apps);
       setStatus(article.status);
+      setCallout(article.callout ?? null);
+      setSteps(article.steps ?? []);
+      setRelatedIds(article.relatedIds ?? []);
     }
   }, [article?.id]);
 
