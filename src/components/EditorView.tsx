@@ -122,6 +122,10 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
       date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
       author: article?.author ?? "Shahid S.",
       body,
+      subtitle: contentType === "Article" ? subtitle : undefined,
+      callout: contentType === "Article" ? callout : null,
+      steps: contentType === "Article" ? steps : undefined,
+      relatedIds: contentType === "Article" ? relatedIds : undefined,
     };
     actions.upsertArticle(next);
     setStatus(newStatus);
