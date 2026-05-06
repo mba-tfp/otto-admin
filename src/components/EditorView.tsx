@@ -420,7 +420,20 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
                     Live — visible to users
                   </div>
                 )}
-                {status !== "Draft" && (
+                {status === "Live" && (
+                  <div>
+                    <button
+                      style={{ width: "100%", color: "#A32D2D", fontSize: 11, padding: "4px 0", fontWeight: 500 }}
+                      onClick={() => persist("Approved")}
+                    >
+                      Unpublish
+                    </button>
+                    <div style={{ fontSize: 10, color: "#8A96AA", textAlign: "center", marginTop: 2 }}>
+                      Removes from help center immediately
+                    </div>
+                  </div>
+                )}
+                {(status === "In review" || status === "Approved") && (
                   <button
                     style={{ width: "100%", color: "#8A96AA", fontSize: 11, padding: "4px 0" }}
                     onClick={onBackToDraft}
