@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { TopBar, PrimaryButton, OutlineButton, PageContent, Card } from "./Layout";
 import { TextInput, Select, Label } from "./Form";
 import { TiptapEditor } from "./TiptapEditor";
-import { FileText, X, ArrowLeft, Trash2, Plus } from "lucide-react";
+import { FileText, X, ArrowLeft, Trash2, Plus, GripVertical } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { actions, useStore, type Status, type ContentType, type Article, type CalloutType, type ArticleStep } from "../data/store";
 
@@ -61,6 +61,14 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
   const [steps, setSteps] = useState<ArticleStep[]>(article?.steps ?? []);
   const [relatedIds, setRelatedIds] = useState<string[]>(article?.relatedIds ?? []);
   const [relatedQuery, setRelatedQuery] = useState("");
+  const [faqCategory, setFaqCategory] = useState(article?.faqCategory ?? "");
+  const [faqPairs, setFaqPairs] = useState<{ id: string; question: string; answer: string }[]>(
+    article?.faqPairs ??
+      (article?.type === "FAQ" || (!article && false)
+        ? [{ id: crypto.randomUUID(), question: "", answer: "" }]
+        : []),
+  );
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
   const allArticles = useStore((s) => s.articles);
   const [attachments, setAttachments] = useState<Attachment[]>(
     mode === "edit" ? [{ id: "att1", name: "patient-consent-form.pdf", size: 214 * 1024 }] : []
@@ -81,8 +89,17 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
       setCallout(article.callout ?? null);
       setSteps(article.steps ?? []);
       setRelatedIds(article.relatedIds ?? []);
+      setFaqCategory(article.faqCategory ?? "");
+      setFaqPairs(article.faqPairs ?? []);
     }
   }, [article?.id]);
+
+  // Seed one empty FAQ pair when switching to FAQ with no pairs
+  useEffect(() => {
+    if (contentType === "FAQ" && faqPairs.length === 0) {
+      setFaqPairs([{ id: crypto.randomUUID(), question: "", answer: "" }]);
+    }
+  }, [contentType]);
 
   const embedUrl = useMemo(() => getEmbedUrl(videoUrl), [videoUrl]);
 
@@ -126,6 +143,8 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
       callout: contentType === "Article" ? callout : null,
       steps: contentType === "Article" ? steps : undefined,
       relatedIds: contentType === "Article" ? relatedIds : undefined,
+      faqCategory: contentType === "FAQ" ? faqCategory : undefined,
+      faqPairs: contentType === "FAQ" ? faqPairs : undefined,
     };
     actions.upsertArticle(next);
     setStatus(newStatus);
@@ -268,8 +287,146 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
                 </>
               )}
 
-              <TiptapEditor key={id} content={body} onChange={setBody} />
+              {contentType !== "FAQ" && (
+                <TiptapEditor key={id} content={body} onChange={setBody} />
+              )}
 
+              {contentType === "FAQ" && (
+                <div>
+                  <Label>Category</Label>
+                  <input
+                    value={faqCategory}
+                    onChange={(e) => setFaqCategory(e.target.value)}
+                    placeholder="e.g. Account & Billing, Getting Started, Privacy & Security"
+                    style={{
+                      width: "100%",
+                      fontSize: 13,
+                      border: "1px solid #E2E6EF",
+                      borderRadius: 8,
+                      padding: "8px 10px",
+                      outline: "none",
+                      color: "#1A1F2E",
+                    }}
+                  />
+                  <div style={{ fontSize: 11, color: "#8A96AA", marginTop: 6, marginBottom: 18 }}>
+                    Groups related questions together in the help center
+                  </div>
+
+                  {faqPairs.length === 0 ? (
+                    <div
+                      className="flex items-center justify-center"
+                      style={{
+                        border: "1px dashed #E2E6EF",
+                        borderRadius: 8,
+                        padding: 24,
+                        color: "#8A96AA",
+                        fontSize: 13,
+                        marginBottom: 10,
+                      }}
+                    >
+                      No questions yet — click "+ Add question" to get started
+                    </div>
+                  ) : (
+                    faqPairs.map((pair, i) => (
+                      <div
+                        key={pair.id}
+                        draggable
+                        onDragStart={() => setDragIndex(i)}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (dragIndex === null || dragIndex === i) return;
+                          setFaqPairs((p) => {
+                            const next = [...p];
+                            const [moved] = next.splice(dragIndex, 1);
+                            next.splice(i, 0, moved);
+                            return next;
+                          });
+                          setDragIndex(null);
+                        }}
+                        className="flex gap-2"
+                        style={{
+                          border: "1px solid #E2E6EF",
+                          borderRadius: 8,
+                          padding: 12,
+                          background: "#fff",
+                          marginBottom: 10,
+                        }}
+                      >
+                        <div
+                          style={{ color: "#8A96AA", cursor: "grab", paddingTop: 2, flexShrink: 0 }}
+                          aria-label="Drag to reorder"
+                        >
+                          <GripVertical size={16} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+                            <div style={{ fontSize: 11, color: "#8A96AA", fontWeight: 500 }}>Q{i + 1}</div>
+                            <button
+                              onClick={() => setFaqPairs((p) => p.filter((x) => x.id !== pair.id))}
+                              style={{ color: "#8A96AA", padding: 4 }}
+                              aria-label="Delete question"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                          <Label>Question</Label>
+                          <input
+                            value={pair.question}
+                            onChange={(e) =>
+                              setFaqPairs((p) =>
+                                p.map((x) => (x.id === pair.id ? { ...x, question: e.target.value } : x)),
+                              )
+                            }
+                            placeholder="e.g. How do I reset my password?"
+                            style={{
+                              width: "100%",
+                              fontSize: 13,
+                              border: "1px solid #E2E6EF",
+                              borderRadius: 8,
+                              padding: "8px 10px",
+                              outline: "none",
+                              color: "#1A1F2E",
+                              marginBottom: 12,
+                            }}
+                          />
+                          <Label>Answer</Label>
+                          <TiptapEditor
+                            key={pair.id}
+                            content={pair.answer}
+                            onChange={(html) =>
+                              setFaqPairs((p) =>
+                                p.map((x) => (x.id === pair.id ? { ...x, answer: html } : x)),
+                              )
+                            }
+                          />
+                        </div>
+                      </div>
+                    ))
+                  )}
+
+                  <button
+                    onClick={() =>
+                      setFaqPairs((p) => [...p, { id: crypto.randomUUID(), question: "", answer: "" }])
+                    }
+                    className="flex items-center gap-1"
+                    style={{
+                      fontSize: 12,
+                      color: "#1B2B4B",
+                      fontWeight: 500,
+                      border: "1px solid #E2E6EF",
+                      borderRadius: 8,
+                      padding: "7px 12px",
+                      background: "#fff",
+                    }}
+                  >
+                    <Plus size={13} /> Add question
+                  </button>
+                </div>
+              )}
+
+              {contentType !== "FAQ" && (
+              <>
               {/* Video */}
               <div style={{ marginTop: 20 }}>
                 <Label>Video embed</Label>
@@ -364,6 +521,8 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
                   </div>
                 )}
               </div>
+              </>
+              )}
             </Card>
           </div>
 
