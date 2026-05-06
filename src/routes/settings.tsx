@@ -139,24 +139,10 @@ function SettingsPage() {
   const [notif1, setNotif1] = useState(true);
   const [notif2, setNotif2] = useState(true);
   const [notifEmail, setNotifEmail] = useState("team@otto.com");
-  const fileRef = useRef<HTMLInputElement>(null);
-
   const [memberDialog, setMemberDialog] = useState<{ open: boolean; member: TeamMember | null }>({
     open: false,
     member: null,
   });
-
-  const onLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      actions.updateBranding(activeApp, { logoFileName: f.name, logoDataUrl: reader.result as string });
-      toast.success(`Uploaded ${f.name}`);
-    };
-    reader.readAsDataURL(f);
-    e.target.value = "";
-  };
 
   const fakeKey = (app: AppName) => "sk_otto_" + app.toLowerCase().replace(/\s/g, "_") + "_••••" + (app.length * 7 + 1234);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
@@ -193,76 +179,26 @@ function SettingsPage() {
             </div>
             <Card padding="0 16px">
               <SettingRow
-                label="Primary colour"
-                sub="CTAs, active states"
-                control={
-                  <div className="flex items-center gap-2">
-                    <div style={{ width: 26, height: 26, borderRadius: 6, background: branding.primaryColor, border: "1px solid #E2E6EF" }} />
-                    <TextInput value={branding.primaryColor} onChange={(v) => actions.updateBranding(activeApp, { primaryColor: v })} width={80} />
-                  </div>
-                }
-              />
-              <SettingRow
-                label="Sidebar background"
-                sub="Help center nav colour"
-                control={
-                  <div className="flex items-center gap-2">
-                    <div style={{ width: 26, height: 26, borderRadius: 6, background: branding.sidebarBg, border: "1px solid #E2E6EF" }} />
-                    <TextInput value={branding.sidebarBg} onChange={(v) => actions.updateBranding(activeApp, { sidebarBg: v })} width={80} />
-                  </div>
-                }
-              />
-              <SettingRow
                 label="App display name"
-                sub="Shown in help center header"
-                control={<TextInput value={branding.displayName} onChange={(v) => actions.updateBranding(activeApp, { displayName: v })} width={150} />}
+                sub="Shown in help center header and breadcrumbs"
+                control={<TextInput value={branding.displayName} onChange={(v) => actions.updateBranding(activeApp, { displayName: v })} width={200} />}
               />
-              <SettingRow
-                label="Logo"
-                sub="SVG or PNG, max 200×40px"
-                isLast
-                control={
-                  <div className="flex items-center gap-2">
-                    <input
-                      ref={fileRef}
-                      type="file"
-                      accept="image/svg+xml,image/png,image/jpeg"
-                      style={{ display: "none" }}
-                      onChange={onLogoUpload}
-                    />
-                    {branding.logoDataUrl && (
-                      <img src={branding.logoDataUrl} alt="" style={{ height: 24, maxWidth: 80, objectFit: "contain", borderRadius: 4, border: "1px solid #E2E6EF", background: "#fff", padding: 2 }} />
-                    )}
-                    <OutlineButton onClick={() => fileRef.current?.click()}>{branding.logoDataUrl ? "Replace" : "Upload logo"}</OutlineButton>
-                    {branding.logoFileName && (
-                      <button onClick={() => { actions.updateBranding(activeApp, { logoFileName: null, logoDataUrl: null }); toast("Logo removed"); }} style={{ fontSize: 11, color: "#E5635A" }}>Remove</button>
-                    )}
+              <div style={{ padding: "12px 0", borderBottom: "none" }}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: "#1A1F2E" }}>App slug</div>
+                    <div style={{ fontSize: 11, color: "#8A96AA", marginTop: 1 }}>Used for URL routing (help.otto.com/[slug]) and API key scoping</div>
                   </div>
-                }
-              />
-            </Card>
-
-            {/* Branding live preview */}
-            <div style={{ marginTop: 16 }}>
-              <SectionLabel>Live preview · {activeApp} help center</SectionLabel>
-              <div style={{ borderRadius: 10, overflow: "hidden", border: "1px solid #E2E6EF" }}>
-                <div style={{ background: branding.sidebarBg, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid #E2E6EF" }}>
-                  {branding.logoDataUrl ? (
-                    <img src={branding.logoDataUrl} alt="" style={{ height: 22, maxWidth: 100, objectFit: "contain" }} />
-                  ) : (
-                    <div style={{ width: 22, height: 22, borderRadius: 6, background: branding.primaryColor }} />
-                  )}
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#1B2B4B" }}>{branding.displayName}</div>
+                  <TextInput
+                    value={branding.slug}
+                    onChange={(v) => actions.updateBranding(activeApp, { slug: v.toLowerCase().replace(/[^a-z-]/g, "") })}
+                    placeholder={branding.slug}
+                    width={200}
+                  />
                 </div>
-                <div style={{ background: "#fff", padding: 14 }}>
-                  <div style={{ fontSize: 11, color: "#8A96AA", marginBottom: 6 }}>Help articles</div>
-                  <div style={{ fontSize: 13, color: "#1A1F2E", marginBottom: 10 }}>How do I get started?</div>
-                  <button style={{ background: branding.primaryColor, color: "#fff", border: 0, borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 500 }}>
-                    Read article
-                  </button>
-                </div>
+                <div style={{ fontSize: 11, color: "#8A96AA", marginTop: 6, textAlign: "right" }}>Lowercase letters and hyphens only</div>
               </div>
-            </div>
+            </Card>
 
             <div style={{ marginTop: 24 }}>
               <SectionLabel>API keys</SectionLabel>

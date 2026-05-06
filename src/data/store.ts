@@ -34,11 +34,8 @@ export type FeedbackItem = {
 };
 
 export type Branding = {
-  primaryColor: string;
-  sidebarBg: string;
   displayName: string;
-  logoFileName: string | null;
-  logoDataUrl: string | null;
+  slug: string;
 };
 
 export type TeamMember = {
@@ -76,9 +73,9 @@ const initialFeedback: FeedbackItem[] = [
 ];
 
 const initialBranding: Record<AppName, Branding> = {
-  "Otto Notes": { primaryColor: "#E5635A", sidebarBg: "#EEF1F7", displayName: "Otto Notes", logoFileName: null, logoDataUrl: null },
-  "Onboarding": { primaryColor: "#3C3489", sidebarBg: "#EEEDFE", displayName: "Otto Onboarding", logoFileName: null, logoDataUrl: null },
-  "Fertiwise": { primaryColor: "#2D7D46", sidebarBg: "#EAF3DE", displayName: "Fertiwise", logoFileName: null, logoDataUrl: null },
+  "Otto Notes": { displayName: "Otto Notes", slug: "otto-notes" },
+  "Onboarding": { displayName: "Otto Onboarding", slug: "onboarding" },
+  "Fertiwise": { displayName: "Fertiwise", slug: "fertiwise" },
 };
 
 const initialTeam: TeamMember[] = [
