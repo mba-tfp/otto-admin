@@ -521,6 +521,8 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
                   </div>
                 )}
               </div>
+              </>
+              )}
             </Card>
           </div>
 
