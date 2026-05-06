@@ -61,6 +61,14 @@ export function EditorView({ mode, articleId }: { mode: "new" | "edit"; articleI
   const [steps, setSteps] = useState<ArticleStep[]>(article?.steps ?? []);
   const [relatedIds, setRelatedIds] = useState<string[]>(article?.relatedIds ?? []);
   const [relatedQuery, setRelatedQuery] = useState("");
+  const [faqCategory, setFaqCategory] = useState(article?.faqCategory ?? "");
+  const [faqPairs, setFaqPairs] = useState<{ id: string; question: string; answer: string }[]>(
+    article?.faqPairs ??
+      (article?.type === "FAQ" || (!article && false)
+        ? [{ id: crypto.randomUUID(), question: "", answer: "" }]
+        : []),
+  );
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
   const allArticles = useStore((s) => s.articles);
   const [attachments, setAttachments] = useState<Attachment[]>(
     mode === "edit" ? [{ id: "att1", name: "patient-consent-form.pdf", size: 214 * 1024 }] : []
