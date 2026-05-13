@@ -45,8 +45,6 @@ function avatarFor(name: string) {
 function Dashboard() {
   const navigate = useNavigate();
   const articles = useStore((s) => s.articles);
-  const feedback = useStore((s) => s.feedback);
-  const unread = feedback.filter((f) => f.unread).length;
 
   const total = articles.length;
   const published = articles.filter((a) => a.status === "Live").length;
