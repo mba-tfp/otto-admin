@@ -88,17 +88,10 @@ function Dashboard() {
         action={<PrimaryButton onClick={() => navigate({ to: "/editor/new" })}>+ New content</PrimaryButton>}
       />
       <PageContent>
-        <div className="grid grid-cols-4 gap-4 mb-4">
+        <div className="grid grid-cols-3 gap-4 mb-4">
           <StatCard label="Total articles" value={String(total)} sub="across all apps" subColor="#8A96AA" />
           <StatCard label="Published" value={String(published)} sub={`${Math.round((published / Math.max(total, 1)) * 100)}% of library`} subColor="#8A96AA" />
           <StatCard label="Pending approval" value={String(pendingCount)} sub={inReview.length > 0 ? `${inReview.length} need review` : "ready to publish"} subColor="#92580A" />
-          <Link
-            to="/feedback"
-            search={{ type: "All types", app: "All apps", status: unread > 0 ? "New" : "All statuses", selected: undefined }}
-            style={{ textDecoration: "none" }}
-          >
-            <StatCard label="New feedback" value={String(unread)} sub={unread > 0 ? "unread →" : "all caught up"} subColor="#92580A" />
-          </Link>
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-4">
