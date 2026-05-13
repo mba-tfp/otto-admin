@@ -92,9 +92,6 @@ function AnalyticsPage() {
     .map((b) => ({ ...b, value: scale(b.value) }));
   const appMax = Math.max(...visibleApps.map((b) => b.value), 1);
 
-  const submissions = feedback.length;
-  const unresolved = feedback.filter((f) => f.status !== "Resolved").length;
-
   const isFiltered = search.app !== "All apps" || search.range !== "Last 30 days";
 
   return (
