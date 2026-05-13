@@ -136,7 +136,7 @@ function SettingsPage() {
   const branding = useStore((s) => s.branding[activeApp]);
   const team = useStore((s) => s.team);
 
-  const [notif1, setNotif1] = useState(true);
+  
   const [notif2, setNotif2] = useState(true);
   const [notifEmail, setNotifEmail] = useState("team@otto.com");
   const [memberDialog, setMemberDialog] = useState<{ open: boolean; member: TeamMember | null }>({
@@ -266,11 +266,6 @@ function SettingsPage() {
             <div style={{ marginTop: 24 }}>
               <SectionLabel>Notifications</SectionLabel>
               <Card padding="0 16px">
-                <SettingRow
-                  label="New feedback submissions"
-                  sub="Email on new submission"
-                  control={<Toggle on={notif1} onChange={setNotif1} />}
-                />
                 <SettingRow
                   label="Content submitted for review"
                   sub="Email when editor submits"

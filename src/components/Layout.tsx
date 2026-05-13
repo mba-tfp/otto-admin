@@ -1,12 +1,10 @@
 import { Link, useRouterState, Outlet } from "@tanstack/react-router";
-import { LayoutDashboard, FileText, Inbox, BarChart3, Settings as SettingsIcon } from "lucide-react";
+import { LayoutDashboard, FileText, BarChart3, Settings as SettingsIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { useStore } from "../data/store";
 
 const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/content", label: "Content", icon: FileText },
-  { to: "/feedback", label: "Feedback Inbox", icon: Inbox, hasBadge: true },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
@@ -14,7 +12,6 @@ const configNav = [{ to: "/settings", label: "Settings", icon: SettingsIcon }];
 
 export function Sidebar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const unread = useStore((s) => s.feedback.filter((f) => f.unread).length);
   const isActive = (to: string, exact?: boolean) => {
     if (exact) return path === to;
     if (to === "/content" && path.startsWith("/editor")) return true;
@@ -64,20 +61,6 @@ export function Sidebar() {
             >
               <Icon size={15} strokeWidth={1.75} />
               <span className="flex-1">{item.label}</span>
-              {"hasBadge" in item && item.hasBadge && unread > 0 && (
-                <span
-                  className="text-white font-medium"
-                  style={{
-                    background: "#E5635A",
-                    fontSize: 10,
-                    padding: "1px 6px",
-                    borderRadius: 10,
-                    lineHeight: "14px",
-                  }}
-                >
-                  {unread}
-                </span>
-              )}
             </Link>
           );
         })}
