@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as FeedbackRouteImport } from './routes/feedback'
 import { Route as ContentRouteImport } from './routes/content'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
@@ -20,11 +19,6 @@ import { Route as EditorIdRouteImport } from './routes/editor.$id'
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FeedbackRoute = FeedbackRouteImport.update({
-  id: '/feedback',
-  path: '/feedback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContentRoute = ContentRouteImport.update({
@@ -57,7 +51,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/content': typeof ContentRoute
-  '/feedback': typeof FeedbackRoute
   '/settings': typeof SettingsRoute
   '/editor/$id': typeof EditorIdRoute
   '/editor/new': typeof EditorNewRoute
@@ -66,7 +59,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/content': typeof ContentRoute
-  '/feedback': typeof FeedbackRoute
   '/settings': typeof SettingsRoute
   '/editor/$id': typeof EditorIdRoute
   '/editor/new': typeof EditorNewRoute
@@ -76,7 +68,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/content': typeof ContentRoute
-  '/feedback': typeof FeedbackRoute
   '/settings': typeof SettingsRoute
   '/editor/$id': typeof EditorIdRoute
   '/editor/new': typeof EditorNewRoute
@@ -87,7 +78,6 @@ export interface FileRouteTypes {
     | '/'
     | '/analytics'
     | '/content'
-    | '/feedback'
     | '/settings'
     | '/editor/$id'
     | '/editor/new'
@@ -96,7 +86,6 @@ export interface FileRouteTypes {
     | '/'
     | '/analytics'
     | '/content'
-    | '/feedback'
     | '/settings'
     | '/editor/$id'
     | '/editor/new'
@@ -105,7 +94,6 @@ export interface FileRouteTypes {
     | '/'
     | '/analytics'
     | '/content'
-    | '/feedback'
     | '/settings'
     | '/editor/$id'
     | '/editor/new'
@@ -115,7 +103,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalyticsRoute: typeof AnalyticsRoute
   ContentRoute: typeof ContentRoute
-  FeedbackRoute: typeof FeedbackRoute
   SettingsRoute: typeof SettingsRoute
   EditorIdRoute: typeof EditorIdRoute
   EditorNewRoute: typeof EditorNewRoute
@@ -128,13 +115,6 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/feedback': {
-      id: '/feedback'
-      path: '/feedback'
-      fullPath: '/feedback'
-      preLoaderRoute: typeof FeedbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/content': {
@@ -179,7 +159,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalyticsRoute: AnalyticsRoute,
   ContentRoute: ContentRoute,
-  FeedbackRoute: FeedbackRoute,
   SettingsRoute: SettingsRoute,
   EditorIdRoute: EditorIdRoute,
   EditorNewRoute: EditorNewRoute,
@@ -187,3 +166,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

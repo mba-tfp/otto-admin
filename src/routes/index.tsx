@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { TopBar, PrimaryButton, PageContent, Card, StatusBadge } from "../components/Layout";
 import { useStore } from "../data/store";
+import { useStore } from "../data/store";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [{ title: "Dashboard — Otto Help Center Admin" }] }),
