@@ -267,11 +267,6 @@ function SettingsPage() {
               <SectionLabel>Notifications</SectionLabel>
               <Card padding="0 16px">
                 <SettingRow
-                  label="New feedback submissions"
-                  sub="Email on new submission"
-                  control={<Toggle on={notif1} onChange={setNotif1} />}
-                />
-                <SettingRow
                   label="Content submitted for review"
                   sub="Email when editor submits"
                   control={<Toggle on={notif2} onChange={setNotif2} />}
