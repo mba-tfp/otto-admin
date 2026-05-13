@@ -1,12 +1,10 @@
 import { Link, useRouterState, Outlet } from "@tanstack/react-router";
-import { LayoutDashboard, FileText, Inbox, BarChart3, Settings as SettingsIcon } from "lucide-react";
+import { LayoutDashboard, FileText, BarChart3, Settings as SettingsIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { useStore } from "../data/store";
 
 const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/content", label: "Content", icon: FileText },
-  { to: "/feedback", label: "Feedback Inbox", icon: Inbox, hasBadge: true },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
@@ -14,7 +12,6 @@ const configNav = [{ to: "/settings", label: "Settings", icon: SettingsIcon }];
 
 export function Sidebar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const unread = useStore((s) => s.feedback.filter((f) => f.unread).length);
   const isActive = (to: string, exact?: boolean) => {
     if (exact) return path === to;
     if (to === "/content" && path.startsWith("/editor")) return true;
