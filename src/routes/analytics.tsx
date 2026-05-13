@@ -1,9 +1,8 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { TopBar, PageContent, Card } from "../components/Layout";
 import { Select } from "../components/Form";
-import { useStore } from "../data/store";
 
 const searchSchema = z.object({
   app: fallback(z.string(), "All apps").default("All apps"),
