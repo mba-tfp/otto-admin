@@ -61,20 +61,6 @@ export function Sidebar() {
             >
               <Icon size={15} strokeWidth={1.75} />
               <span className="flex-1">{item.label}</span>
-              {"hasBadge" in item && item.hasBadge && unread > 0 && (
-                <span
-                  className="text-white font-medium"
-                  style={{
-                    background: "#E5635A",
-                    fontSize: 10,
-                    padding: "1px 6px",
-                    borderRadius: 10,
-                    lineHeight: "14px",
-                  }}
-                >
-                  {unread}
-                </span>
-              )}
             </Link>
           );
         })}
