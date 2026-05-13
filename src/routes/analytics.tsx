@@ -70,7 +70,7 @@ function BarRow({ name, pct, value, color }: { name: string; pct: number; value:
 function AnalyticsPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
-  const feedback = useStore((s) => s.feedback);
+  
 
   const update = (patch: Partial<typeof search>) => {
     navigate({ to: "/analytics", search: (prev: typeof search) => ({ ...prev, ...patch }) });
