@@ -1,28 +1,101 @@
-## Remove Feedback Inbox (Phase 2 deferral)
+# POC: Payload CMS vs Strapi for Otto Help Center
 
-Strip the Feedback Inbox feature from the app so it can be reintroduced later.
+## Goal
 
-### Changes
+Pick a self-hostable headless CMS to replace this custom admin app and serve a single content API to three apps (Otto Notes, Onboarding, Fertiwise). Decision criteria: editor UX for mixed-skill team, dev experience extending it, multi-app filtering, self-hosting story on your cloud infra, and how cleanly it handles Otto's existing content shapes (Article + Subtitle + Tips + Steps + Related, FAQ Q&A pairs, What's New).
 
-1. **Sidebar nav** (`src/components/Layout.tsx`)
-   - Remove the `{ to: "/feedback", label: "Feedback Inbox", … }` nav item and the unused `Inbox` import.
-   - Remove the `unread` badge selector tied to `s.feedback`.
+**Scope of this POC**: stand up both CMSs side by side, model the existing content types, evaluate against the criteria, pick one. **No frontend** (help center consumer site) and **no migration of this admin app's UI**. This app stays running as-is during the POC and gets retired after the winner ships to production.
 
-2. **Route** (`src/routes/feedback.tsx`)
-   - Delete the file. The router plugin will regenerate `routeTree.gen.ts`.
+## Out of scope
 
-3. **Dashboard** (`src/routes/index.tsx`)
-   - Remove the "New feedback" stat card (and its `<Link to="/feedback">` wrapper).
-   - Drop the `feedback`/`unread` selectors. Change the stats grid from `grid-cols-4` to `grid-cols-3`.
+- Building the help center frontend (deferred)
+- Migrating real content (current data is mock — no users, no live articles)
+- Editor training / change management
+- SSO, audit logging, advanced workflows (Phase 2 after CMS pick)
 
-4. **Analytics** (`src/routes/analytics.tsx`)
-   - Remove the "Submissions" stat card (and its `<Link to="/feedback">`).
-   - Drop the `feedback`, `submissions`, `unresolved` derivations.
-   - Change the top stats grid from `grid-cols-3` to `grid-cols-2` (Total views + Avg. rating remain).
+## Evaluation criteria (scored 1-5)
 
-5. **Settings → Notifications** (`src/routes/settings.tsx`)
-   - Remove the "New feedback submissions" `SettingRow` (keep the other notification rows and the rest of the section unchanged).
+| Criterion | Why it matters |
+|---|---|
+| Editor UX | Mixed technical/non-technical team must be comfortable |
+| Custom field UX (FAQ pairs, related articles) | Otto's content has structured nesting; out-of-box vs custom code matters |
+| Multi-app API filtering | All three apps query `?app=otto-notes&status=live` |
+| Self-hosting on your cloud | Docker + Postgres deployable by your DevOps team |
+| Workflow states (Draft/Review/Approved/Live) | Need this without paying for Enterprise |
+| Upgrade burden | How painful is the next major version |
+| Dev velocity extending it | Adding a new content type, a new field UI |
+| Total cost (hosting + licensing + dev hours) | Honest 12-month projection |
 
-### Kept intentionally
+## Week 1 — Payload CMS POC
 
-- `feedback` data and `actions.*Feedback*` in `src/data/store.ts` stay in place so Phase 2 can wire the UI back without re-seeding data. Let me know if you'd prefer to also strip the store now.
+**Day 1: Infra**
+- Provision Postgres + a Node container on your cloud (whatever your team uses — ECS/Cloud Run/AKS)
+- Deploy Payload via official Docker template
+- Point a subdomain at it (e.g. `cms-poc.otto-internal.com`)
+
+**Day 2-3: Content modeling**
+Define collections matching `src/data/store.ts`:
+- `Article` — title, subtitle, body (richText), apps (relationship to Apps collection), status (select), tipsCallout (group: type + body), steps (array: title + description), relatedArticles (relationship, max 4), videoEmbed, attachments (uploads)
+- `FAQ` — title, category, qaPairs (array: question + answer richText), apps, status
+- `WhatsNew` — title, body, apps, status, publishDate
+- `App` — name (Otto Notes / Onboarding / Fertiwise)
+- `User` with role field (Admin / Editor)
+
+**Day 4: Workflow + access control**
+- Status field with access rules: Editors can't move to Live, only Admins can
+- Draft/published versions enabled per collection
+
+**Day 5: API verification**
+- Hit `GET /api/articles?where[apps.name][equals]=Otto Notes&where[status][equals]=live`
+- Hit `GET /api/faqs?where[apps.name][equals]=Fertiwise` grouped by category
+- Confirm GraphQL endpoint works for the same queries
+- Test pagination, sorting, search
+
+## Week 2 — Strapi POC
+
+Same content model, same infra pattern, same API queries. Same person doing both POCs to keep evaluation fair.
+
+**Specific things to stress-test in Strapi**:
+- Building the FAQ Q&A pair custom field (this is where Strapi historically struggles vs Payload)
+- Workflow states without Enterprise (custom code path)
+- Schema-as-config UI vs how it lands in git/PR review
+- v5 upgrade path documentation
+
+## Day 11-12: Bake-off
+
+Score both against the criteria table. Concrete artifacts to compare:
+- Screen recording of an editor creating an Article with all fields populated
+- Time from "new field requested" to "field live in admin" (add a fake `seoDescription` field as the test)
+- Lines of code / config to add the FAQ Q&A pair UI
+- Page load time of admin with 100 seed articles
+- API response time for the multi-app filter query
+
+## Day 13-14: Decision + Phase 2 plan
+
+Pick winner, document why, write Phase 2 plan covering:
+- Production hardening (backups, monitoring, SSO if needed)
+- Help center frontend project kickoff
+- Retirement plan for this admin app
+- Editor onboarding
+
+## What Lovable will and won't do here
+
+**Lovable can help with**:
+- The eventual help center *frontend* (TanStack Start project consuming the CMS API) — that's exactly what Lovable is built for
+- Generating TypeScript types from the CMS schema for the frontend
+- Scripts to seed the chosen CMS with test data matching `src/data/store.ts`
+
+**Lovable can't really help with**:
+- Operating a self-hosted Node CMS on your infra (that's DevOps work)
+- Writing Payload/Strapi plugins (possible but not Lovable's strength)
+- The POC evaluation itself — that's a human judgment call on UX and dev feel
+
+## Concrete decision factors
+
+If you're truly torn after the POC, the tiebreaker is usually:
+- **Pick Payload if** the team likes TypeScript and codified schemas, you value modern DX, and "rip it out later" matters
+- **Pick Strapi if** you'll hire people who already know it, you want the larger plugin ecosystem, and the team prefers UI-driven content modeling
+
+## What this means for *this* repo
+
+Nothing changes during the POC. This admin app keeps running as the demo / mockup. Once the CMS is picked and content is migrated (trivially — it's all seed data), this repo gets archived. The help center frontend would be a new Lovable project.
